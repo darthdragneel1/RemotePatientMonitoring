@@ -19,12 +19,16 @@ RUN npm run build
 # Stage 3: Production Server
 FROM node:20-alpine
 WORKDIR /app/Backend
+
 COPY Backend/package*.json ./
-# Install only production dependencies
-RUN npm ci --omit=dev
+COPY Backend/prisma ./prisma
+
+# Install all dependencies to ensure prisma CLI is available, generate client, then prune devDependencies
+RUN npm ci && \
+    npx prisma generate && \
+    npm prune --omit=dev
 
 # Copy compiled backend
-COPY --from=backend-builder /app/Backend/prisma ./prisma
 COPY --from=backend-builder /app/Backend/dist ./dist
 
 # Copy compiled frontend into backend's public directory
