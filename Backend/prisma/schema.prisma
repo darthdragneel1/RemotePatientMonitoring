@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ORG_USER
+  ORG_ADMIN
+  SUPER_ADMIN
+}
+
+enum TelemetryKind {
+  TELEMETRY
+  STATUS
+  HEARTBEAT
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  users    User[]
+  patients Patient[]
+  devices  Device[]
+  invites  Invite[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  // Nullable to support a future SSO login path with no local password.
+  passwordHash String?
+  role         Role     @default(ORG_USER)
+  createdAt    DateTime @default(now())
+
+  orgId String?
+  org   Organization? @relation(fields: [orgId], references: [id])
+}
+
+model Invite {
+  id         String    @id @default(cuid())
+  email      String
+  role       Role      @default(ORG_USER)
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  invitedBy  String?
+  createdAt  DateTime  @default(now())
+
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id])
+}
+
+model Patient {
+  id            String    @id @default(cuid())
+  firstName     String
+  lastName      String
+  dateOfBirth   DateTime?
+  gender        String?
+  mrn           String?
+  phone         String?
+  notes         String?
+  createdAt     DateTime  @default(now())
+
+  // Per-metric alert bands (sys/dia/pulse/spo2/glucose/weight), each an
+  // optional { redLow?, orangeLow?, orangeHigh?, redHigh? }. Drives the
+  // green/orange/red coloring on the device telemetry table. Shape is
+  // validated at the API layer (src/schemas/patient.schema.ts), not by
+  // Postgres, same as TelemetryEvent.payload.
+  vitalThresholds Json?
+
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id])
+
+  devices Device[]
+
+  @@unique([orgId, mrn])
+}
+
+model Device {
+  id          String   @id @default(cuid())
+  deviceId    String   @unique
+  modelNumber String?
+  imei        String?
+  sn          String?
+  createdAt   DateTime @default(now())
+
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id])
+
+  patientId String?
+  patient   Patient? @relation(fields: [patientId], references: [id], onDelete: SetNull)
+
+  events TelemetryEvent[]
+}
+
+model TelemetryEvent {
+  id         String        @id @default(cuid())
+  kind       TelemetryKind
+  payload    Json
+  recordedAt DateTime
+  createdAt  DateTime      @default(now())
+
+  deviceId String
+  device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, recordedAt])
+}

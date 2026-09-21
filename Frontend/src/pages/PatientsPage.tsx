@@ -1,0 +1,160 @@
+import { useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
+import { toast } from "sonner";
+import { usePatients, useCreatePatient } from "@/hooks/usePatients";
+import { ApiError } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { VitalThresholdsEditor } from "@/components/VitalThresholdsEditor";
+import type { VitalThresholds } from "@/lib/types";
+
+export function PatientsPage() {
+  const { data: patients, isLoading } = usePatients();
+  const createPatient = useCreatePatient();
+
+  const [open, setOpen] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [mrn, setMrn] = useState("");
+  const [phone, setPhone] = useState("");
+  const [vitalThresholds, setVitalThresholds] = useState<VitalThresholds>({});
+  const [error, setError] = useState<string | null>(null);
+
+  function resetForm() {
+    setFirstName("");
+    setLastName("");
+    setDateOfBirth("");
+    setMrn("");
+    setPhone("");
+    setVitalThresholds({});
+    setError(null);
+  }
+
+  function handleOpenChange(nextOpen: boolean) {
+    setOpen(nextOpen);
+    if (!nextOpen) resetForm();
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    try {
+      await createPatient.mutateAsync({
+        firstName,
+        lastName,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth).toISOString() : undefined,
+        mrn: mrn || undefined,
+        phone: phone || undefined,
+        vitalThresholds: Object.keys(vitalThresholds).length > 0 ? vitalThresholds : undefined,
+      });
+      toast.success("Patient added");
+      setOpen(false);
+      resetForm();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Something went wrong");
+    }
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Patients</h1>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
+          <DialogTrigger render={<Button>Add Patient</Button>} />
+          <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Add Patient</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                <Input
+                  id="dateOfBirth"
+                  type="date"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="mrn">MRN</Label>
+                <Input id="mrn" value={mrn} onChange={(e) => setMrn(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              </div>
+              <VitalThresholdsEditor value={vitalThresholds} onChange={setVitalThresholds} />
+              {error && <p className="text-sm text-destructive">{error}</p>}
+              <DialogFooter>
+                <Button type="submit" disabled={createPatient.isPending}>
+                  {createPatient.isPending ? "Adding…" : "Add Patient"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="mt-6">
+        {isLoading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        ) : patients?.length === 0 ? (
+          <p className="text-muted-foreground">No patients yet — add one to get started.</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Date of Birth</TableHead>
+                <TableHead>MRN</TableHead>
+                <TableHead>Phone</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {patients?.map((patient) => (
+                <TableRow key={patient.id}>
+                  <TableCell>
+                    <Link to={`/patients/${patient.id}`} className="font-medium text-primary hover:underline">
+                      {patient.firstName} {patient.lastName}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : "—"}
+                  </TableCell>
+                  <TableCell>{patient.mrn ?? "—"}</TableCell>
+                  <TableCell>{patient.phone ?? "—"}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </div>
+    </div>
+  );
+}
