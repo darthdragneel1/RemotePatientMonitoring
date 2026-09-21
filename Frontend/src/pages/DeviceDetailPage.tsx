@@ -1,13 +1,7 @@
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import {
-  useDevice,
-  useDeviceTelemetry,
-  useUpdateDevice,
-  useDeleteDevice,
-  fetchDeviceTelemetryExport,
-} from "@/hooks/useDevices";
+import { useDevice, useDeviceTelemetry, useUpdateDevice, fetchDeviceTelemetryExport } from "@/hooks/useDevices";
 import { usePatients } from "@/hooks/usePatients";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,11 +38,9 @@ function toEndOfDayIso(date: string): string {
 
 export function DeviceDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { data: device, isLoading } = useDevice(id);
   const { data: patients } = usePatients();
   const updateDevice = useUpdateDevice(id!);
-  const deleteDevice = useDeleteDevice();
 
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -74,13 +66,6 @@ export function DeviceDetailPage() {
   async function handleReassign(value: string | null) {
     await updateDevice.mutateAsync({ patientId: !value || value === UNASSIGNED ? null : value });
     toast.success("Patient assignment updated");
-  }
-
-  async function handleDelete() {
-    if (!confirm("Delete this device? This also deletes its telemetry history.")) return;
-    await deleteDevice.mutateAsync(id!);
-    toast.success("Device deleted");
-    navigate("/devices");
   }
 
   async function handleDownloadPdf() {
@@ -128,9 +113,6 @@ export function DeviceDetailPage() {
           </Link>
           <h1 className="mt-1 text-2xl font-semibold">{device.deviceId}</h1>
         </div>
-        <Button variant="destructive" onClick={handleDelete} disabled={deleteDevice.isPending}>
-          Delete Device
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">

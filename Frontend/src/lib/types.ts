@@ -5,6 +5,8 @@ export interface User {
   email: string;
   role: Role;
   orgId: string | null;
+  org?: { id: string; name: string } | null;
+  createdAt: string;
 }
 
 export interface Organization {
