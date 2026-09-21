@@ -25,10 +25,7 @@ function num(data: TelemetryData, key: string): number | undefined {
   return typeof value === "number" ? value : undefined;
 }
 
-function bool(data: TelemetryData, key: string): boolean | undefined {
-  const value = data[key];
-  return typeof value === "boolean" ? value : undefined;
-}
+// removed bool function
 
 // mmol/L -> mg/dL, the standard clinical conversion factor.
 const MMOL_TO_MGDL = 18.0182;
