@@ -4,6 +4,7 @@ import { prisma } from "../db/prisma";
 import { param } from "../utils/params";
 import { hashInviteToken } from "../utils/inviteToken";
 import { COOKIE_NAME, signToken } from "../utils/jwt";
+import { logAuditEvent } from "../utils/audit";
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -60,6 +61,14 @@ export async function acceptInvite(req: Request, res: Response) {
       data: { acceptedAt: new Date() },
     });
     return created;
+  });
+
+  logAuditEvent("ACCEPT_INVITE", {
+    userId: user.id, // Explicitly pass since req.user isn't set yet
+    userEmail: user.email,
+    orgId: user.orgId,
+    target: "Invite",
+    targetId: invite.id,
   });
 
   const token = signToken({ userId: user.id, role: user.role, orgId: user.orgId });

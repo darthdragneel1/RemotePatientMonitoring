@@ -5,6 +5,7 @@ import { DevicesPage } from "@/pages/DevicesPage";
 import { DeviceDetailPage } from "@/pages/DeviceDetailPage";
 import { PatientsPage } from "@/pages/PatientsPage";
 import { PatientDetailPage } from "@/pages/PatientDetailPage";
+import { AuditLogsPage } from "@/pages/AuditLogsPage";
 import { OrganizationsPage } from "@/pages/admin/OrganizationsPage";
 import { InvitesPage } from "@/pages/admin/InvitesPage";
 import { UsersPage } from "@/pages/admin/UsersPage";
@@ -24,6 +25,7 @@ export function App() {
           <Route path="/devices/:id" element={<DeviceDetailPage />} />
           <Route path="/patients" element={<PatientsPage />} />
           <Route path="/patients/:id" element={<PatientDetailPage />} />
+          <Route path="/audit" element={<AuditLogsPage />} />
 
           <Route element={<RequireRole role="SUPER_ADMIN" />}>
             <Route path="/admin/organizations" element={<OrganizationsPage />} />

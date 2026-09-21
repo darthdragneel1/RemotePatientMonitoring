@@ -24,10 +24,11 @@ model Organization {
   name      String
   createdAt DateTime @default(now())
 
-  users    User[]
-  patients Patient[]
-  devices  Device[]
-  invites  Invite[]
+  users      User[]
+  patients   Patient[]
+  devices    Device[]
+  invites    Invite[]
+  auditLogs  AuditLog[]
 }
 
 model User {
@@ -110,4 +111,20 @@ model TelemetryEvent {
   device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 
   @@index([deviceId, recordedAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  userEmail String?
+  orgId     String?
+  action    String
+  target    String?
+  targetId  String?
+  details   Json?
+  createdAt DateTime @default(now())
+
+  org       Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+
+  @@index([orgId, createdAt])
 }

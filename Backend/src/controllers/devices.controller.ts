@@ -3,6 +3,7 @@ import { prisma } from "../db/prisma";
 import { param } from "../utils/params";
 import { orgScope } from "../middleware/auth";
 import { resolveCreateOrgId, ScopeError } from "../utils/scope";
+import { logAuditEvent } from "../utils/audit";
 
 const listInclude = {
   patient: { select: { id: true, firstName: true, lastName: true, vitalThresholds: true } },
@@ -56,6 +57,14 @@ export async function createDevice(req: Request, res: Response) {
     include: listInclude,
   });
 
+  logAuditEvent("CREATE_DEVICE", {
+    req,
+    orgId: device.orgId,
+    target: "Device",
+    targetId: device.id,
+    details: { deviceId: device.deviceId },
+  });
+
   res.status(201).json({ device });
 }
 
@@ -81,6 +90,19 @@ export async function updateDevice(req: Request, res: Response) {
     where: { id: existing.id },
     data: req.body,
     include: listInclude,
+  });
+
+  let action = "UPDATE_DEVICE";
+  if (req.body.patientId !== undefined && req.body.patientId !== existing.patientId) {
+    action = req.body.patientId === null ? "UNASSIGN_DEVICE" : "ASSIGN_DEVICE";
+  }
+
+  logAuditEvent(action, {
+    req,
+    orgId: device.orgId,
+    target: "Device",
+    targetId: device.id,
+    details: { updatedFields: Object.keys(req.body) },
   });
 
   res.json({ device });

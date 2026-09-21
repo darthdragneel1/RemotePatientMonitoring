@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import { prisma } from "../db/prisma";
 import { COOKIE_NAME, signToken } from "../utils/jwt";
+import { logAuditEvent } from "../utils/audit";
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -35,6 +36,13 @@ export async function login(req: Request, res: Response) {
     secure: isProd,
     sameSite: "lax",
     maxAge: 8 * 60 * 60 * 1000,
+  });
+
+  // Log successful login
+  logAuditEvent("LOGIN", {
+    userId: user.id,
+    userEmail: user.email,
+    orgId: user.orgId,
   });
 
   res.json({

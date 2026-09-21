@@ -3,6 +3,7 @@ import { prisma } from "../db/prisma";
 import { param } from "../utils/params";
 import { orgScope } from "../middleware/auth";
 import { resolveCreateOrgId, ScopeError } from "../utils/scope";
+import { logAuditEvent } from "../utils/audit";
 
 export async function listPatients(req: Request, res: Response) {
   const patients = await prisma.patient.findMany({
@@ -42,6 +43,14 @@ export async function createPatient(req: Request, res: Response) {
     data: { ...data, orgId },
   });
 
+  logAuditEvent("CREATE_PATIENT", {
+    req,
+    orgId: patient.orgId,
+    target: "Patient",
+    targetId: patient.id,
+    details: { name: `${patient.firstName} ${patient.lastName}` },
+  });
+
   res.status(201).json({ patient });
 }
 
@@ -57,6 +66,14 @@ export async function updatePatient(req: Request, res: Response) {
   const patient = await prisma.patient.update({
     where: { id: existing.id },
     data: req.body,
+  });
+
+  logAuditEvent("UPDATE_PATIENT", {
+    req,
+    orgId: patient.orgId,
+    target: "Patient",
+    targetId: patient.id,
+    details: { updatedFields: Object.keys(req.body) },
   });
 
   res.json({ patient });
@@ -77,5 +94,14 @@ export async function deletePatient(req: Request, res: Response) {
   }
 
   await prisma.patient.delete({ where: { id: existing.id } });
+
+  logAuditEvent("DELETE_PATIENT", {
+    req,
+    orgId: existing.orgId,
+    target: "Patient",
+    targetId: existing.id,
+    details: { name: `${existing.firstName} ${existing.lastName}` },
+  });
+
   res.status(204).send();
 }

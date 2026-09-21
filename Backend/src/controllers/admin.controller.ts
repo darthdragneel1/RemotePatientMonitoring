@@ -3,6 +3,7 @@ import { prisma } from "../db/prisma";
 import { param } from "../utils/params";
 import { generateInviteToken } from "../utils/inviteToken";
 import { sendInviteEmail } from "../utils/email";
+import { logAuditEvent } from "../utils/audit";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -17,13 +18,34 @@ export async function createOrganization(req: Request, res: Response) {
   const organization = await prisma.organization.create({
     data: req.body,
   });
+
+  logAuditEvent("CREATE_ORG", {
+    req,
+    orgId: organization.id,
+    target: "Organization",
+    targetId: organization.id,
+    details: { name: organization.name },
+  });
+
   res.status(201).json({ organization });
 }
 
 export async function deleteOrganization(req: Request, res: Response) {
   const orgId = param(req, "id");
   try {
+    const existing = await prisma.organization.findUnique({ where: { id: orgId } });
     await prisma.organization.delete({ where: { id: orgId } });
+    
+    if (existing) {
+      logAuditEvent("DELETE_ORG", {
+        req,
+        orgId: existing.id,
+        target: "Organization",
+        targetId: existing.id,
+        details: { name: existing.name },
+      });
+    }
+
     res.status(204).send();
   } catch (err) {
     res.status(400).json({ error: "Cannot delete organization. Ensure all associated users and patients are removed first." });
@@ -44,7 +66,19 @@ export async function deleteUser(req: Request, res: Response) {
     return res.status(400).json({ error: "Cannot delete your own account." });
   }
   try {
+    const existing = await prisma.user.findUnique({ where: { id: userId } });
     await prisma.user.delete({ where: { id: userId } });
+    
+    if (existing) {
+      logAuditEvent("DELETE_USER", {
+        req,
+        orgId: existing.orgId,
+        target: "User",
+        targetId: existing.id,
+        details: { email: existing.email },
+      });
+    }
+
     res.status(204).send();
   } catch (err) {
     res.status(404).json({ error: "User not found" });
@@ -89,6 +123,14 @@ export async function createInvite(req: Request, res: Response) {
   const link = `${process.env.FRONTEND_URL}/accept-invite?token=${token}`;
   await sendInviteEmail(email, link);
 
+  logAuditEvent("CREATE_INVITE", {
+    req,
+    orgId,
+    target: "Invite",
+    targetId: invite.id,
+    details: { email, role },
+  });
+
   res.status(201).json({ invite: { id: invite.id, email: invite.email, orgId: invite.orgId, expiresAt: invite.expiresAt } });
 }
 
@@ -100,5 +142,14 @@ export async function revokeInvite(req: Request, res: Response) {
   }
 
   await prisma.invite.delete({ where: { id: invite.id } });
+
+  logAuditEvent("REVOKE_INVITE", {
+    req,
+    orgId: invite.orgId,
+    target: "Invite",
+    targetId: invite.id,
+    details: { email: invite.email },
+  });
+
   res.status(204).send();
 }

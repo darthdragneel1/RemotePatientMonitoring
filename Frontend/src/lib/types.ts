@@ -68,3 +68,15 @@ export interface TelemetryEvent {
   createdAt: string;
   deviceId: string;
 }
+
+export interface AuditLog {
+  id: string;
+  userId: string | null;
+  userEmail: string | null;
+  orgId: string | null;
+  action: string;
+  target: string | null;
+  targetId: string | null;
+  details: any | null;
+  createdAt: string;
+}

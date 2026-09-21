@@ -26,6 +26,11 @@ export function AppLayout() {
             <NavLink to="/patients" className={navLinkClass}>
               Patients
             </NavLink>
+            {user?.role !== "ORG_USER" && (
+              <NavLink to="/audit" className={navLinkClass}>
+                Audit Logs
+              </NavLink>
+            )}
             {user?.role === "SUPER_ADMIN" && (
               <>
                 <NavLink to="/admin/organizations" className={navLinkClass}>
