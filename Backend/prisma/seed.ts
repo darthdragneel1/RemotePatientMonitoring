@@ -14,11 +14,16 @@ async function main() {
     data: { name: "Riverside Medical Group" },
   });
 
+  const adminOrg = await prisma.organization.create({
+    data: { name: "System Admin Org" },
+  });
+
   await prisma.user.create({
     data: {
       email: "abhishekkurra1999@gmail.com",
       passwordHash: adminPasswordHash,
       role: Role.SUPER_ADMIN,
+      orgId: adminOrg.id,
     },
   });
 
