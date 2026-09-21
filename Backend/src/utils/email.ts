@@ -1,17 +1,22 @@
-import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM_EMAIL = process.env.FROM_EMAIL || "onboarding@resend.dev";
+import nodemailer from "nodemailer";
 
 export async function sendInviteEmail(to: string, link: string): Promise<void> {
-  if (!process.env.RESEND_API_KEY) {
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
     console.log(`[email:stub] Invite for ${to}: ${link}`);
     return;
   }
 
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  });
+
   try {
-    const { data, error } = await resend.emails.send({
-      from: FROM_EMAIL,
+    const info = await transporter.sendMail({
+      from: `"Remote Patient Monitoring" <${process.env.GMAIL_USER}>`,
       to,
       subject: "You've been invited to Remote Patient Monitoring",
       html: `
@@ -24,11 +29,7 @@ export async function sendInviteEmail(to: string, link: string): Promise<void> {
       `,
     });
     
-    if (error) {
-      console.error(`[email:error] Resend API rejected the email to ${to}:`, error);
-      return;
-    }
-    console.log(`[email:sent] Invite successfully sent to ${to}`, data);
+    console.log(`[email:sent] Invite successfully sent to ${to}`, info.messageId);
   } catch (error) {
     console.error(`[email:error] Failed to send invite to ${to}`, error);
   }
