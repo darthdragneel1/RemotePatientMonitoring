@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useDevices, useCreateDevice, useUpdateDevice } from "@/hooks/useDevices";
 import { usePatients } from "@/hooks/usePatients";
+import { useOrganizations } from "@/hooks/useAdmin";
 import { ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,7 +75,10 @@ export function DevicesPage() {
   const [imei, setImei] = useState("");
   const [sn, setSn] = useState("");
   const [patientId, setPatientId] = useState<string>("");
+  const [orgId, setOrgId] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+
+  const { data: organizations } = useOrganizations();
 
   function resetForm() {
     setDeviceId("");
@@ -82,6 +86,7 @@ export function DevicesPage() {
     setImei("");
     setSn("");
     setPatientId("");
+    setOrgId("");
     setError(null);
   }
 
@@ -94,6 +99,10 @@ export function DevicesPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (user?.role === "SUPER_ADMIN" && !orgId) {
+      setError("Organization is required for System Admins");
+      return;
+    }
     setError(null);
     try {
       await createDevice.mutateAsync({
@@ -102,6 +111,7 @@ export function DevicesPage() {
         imei: imei || undefined,
         sn: sn || undefined,
         patientId: patientId || undefined,
+        ...(user?.role === "SUPER_ADMIN" ? { orgId } : {}),
       });
       toast.success("Device added");
       setOpen(false);
@@ -122,8 +132,25 @@ export function DevicesPage() {
               <DialogTitle>Add Device</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {user?.role === "SUPER_ADMIN" && (
+                <div className="space-y-2">
+                  <Label>Organization <span className="text-destructive">*</span></Label>
+                  <Select value={orgId} onValueChange={setOrgId} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Organization" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {organizations?.map((org) => (
+                        <SelectItem key={org.id} value={org.id}>
+                          {org.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="space-y-2">
-                <Label htmlFor="deviceId">Device ID</Label>
+                <Label htmlFor="deviceId">Device ID <span className="text-destructive">*</span></Label>
                 <Input id="deviceId" value={deviceId} onChange={(e) => setDeviceId(e.target.value)} required />
               </div>
               <div className="space-y-2">

@@ -1,7 +1,9 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 import { usePatients, useCreatePatient, useDeletePatient } from "@/hooks/usePatients";
+import { useOrganizations } from "@/hooks/useAdmin";
 import { ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +17,13 @@ import {
   DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { VitalThresholdsEditor } from "@/components/VitalThresholdsEditor";
 import type { VitalThresholds } from "@/lib/types";
@@ -56,7 +65,9 @@ function DeletePatientDialog({ patientId, patientName }: { patientId: string; pa
 }
 
 export function PatientsPage() {
+  const { user } = useAuth();
   const { data: patients, isLoading } = usePatients();
+  const { data: organizations } = useOrganizations();
   const createPatient = useCreatePatient();
 
   const [open, setOpen] = useState(false);
@@ -65,6 +76,7 @@ export function PatientsPage() {
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [mrn, setMrn] = useState("");
   const [phone, setPhone] = useState("");
+  const [orgId, setOrgId] = useState("");
   const [vitalThresholds, setVitalThresholds] = useState<VitalThresholds>({});
   const [error, setError] = useState<string | null>(null);
 
@@ -74,6 +86,7 @@ export function PatientsPage() {
     setDateOfBirth("");
     setMrn("");
     setPhone("");
+    setOrgId("");
     setVitalThresholds({});
     setError(null);
   }
@@ -85,6 +98,10 @@ export function PatientsPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (user?.role === "SUPER_ADMIN" && !orgId) {
+      setError("Organization is required for System Admins");
+      return;
+    }
     setError(null);
     try {
       await createPatient.mutateAsync({
@@ -94,6 +111,7 @@ export function PatientsPage() {
         mrn: mrn || undefined,
         phone: phone || undefined,
         vitalThresholds: Object.keys(vitalThresholds).length > 0 ? vitalThresholds : undefined,
+        ...(user?.role === "SUPER_ADMIN" ? { orgId } : {}),
       });
       toast.success("Patient added");
       setOpen(false);
@@ -114,6 +132,23 @@ export function PatientsPage() {
               <DialogTitle>Add Patient</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {user?.role === "SUPER_ADMIN" && (
+                <div className="space-y-2">
+                  <Label>Organization <span className="text-destructive">*</span></Label>
+                  <Select value={orgId} onValueChange={setOrgId} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Organization" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {organizations?.map((org) => (
+                        <SelectItem key={org.id} value={org.id}>
+                          {org.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First Name</Label>
