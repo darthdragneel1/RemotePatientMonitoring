@@ -10,7 +10,7 @@ export async function sendInviteEmail(to: string, link: string): Promise<void> {
   }
 
   try {
-    await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to,
       subject: "You've been invited to Remote Patient Monitoring",
@@ -23,7 +23,12 @@ export async function sendInviteEmail(to: string, link: string): Promise<void> {
         <p>If you did not expect this invitation, you can safely ignore this email.</p>
       `,
     });
-    console.log(`[email:sent] Invite successfully sent to ${to}`);
+    
+    if (error) {
+      console.error(`[email:error] Resend API rejected the email to ${to}:`, error);
+      return;
+    }
+    console.log(`[email:sent] Invite successfully sent to ${to}`, data);
   } catch (error) {
     console.error(`[email:error] Failed to send invite to ${to}`, error);
   }
