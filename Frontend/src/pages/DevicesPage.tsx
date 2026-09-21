@@ -135,7 +135,7 @@ export function DevicesPage() {
               {user?.role === "SUPER_ADMIN" && (
                 <div className="space-y-2">
                   <Label>Organization <span className="text-destructive">*</span></Label>
-                  <Select value={orgId} onValueChange={setOrgId} required>
+                  <Select value={orgId} onValueChange={(v) => setOrgId(v ?? "")} required>
                     <SelectTrigger>
                       <SelectValue placeholder="Select Organization" />
                     </SelectTrigger>
