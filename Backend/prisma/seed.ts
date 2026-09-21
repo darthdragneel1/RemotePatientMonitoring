@@ -7,19 +7,28 @@ async function main() {
   const adminPasswordHash = await bcrypt.hash("Matsumoto/\\1290", 10);
   const userPasswordHash = await bcrypt.hash("password123", 10);
 
-  const orgA = await prisma.organization.create({
-    data: { name: "Acme Health Clinic" },
+  const orgA = await prisma.organization.upsert({
+    where: { id: "seed-org-a" },
+    update: {},
+    create: { id: "seed-org-a", name: "Acme Health Clinic" },
   });
-  const orgB = await prisma.organization.create({
-    data: { name: "Riverside Medical Group" },
+  
+  const orgB = await prisma.organization.upsert({
+    where: { id: "seed-org-b" },
+    update: {},
+    create: { id: "seed-org-b", name: "Riverside Medical Group" },
   });
 
-  const adminOrg = await prisma.organization.create({
-    data: { name: "System Admin Org" },
+  const adminOrg = await prisma.organization.upsert({
+    where: { id: "seed-admin-org" },
+    update: {},
+    create: { id: "seed-admin-org", name: "System Admin Org" },
   });
 
-  await prisma.user.create({
-    data: {
+  await prisma.user.upsert({
+    where: { email: "abhishekkurra1999@gmail.com" },
+    update: { orgId: adminOrg.id },
+    create: {
       email: "abhishekkurra1999@gmail.com",
       passwordHash: adminPasswordHash,
       role: Role.SUPER_ADMIN,
@@ -27,8 +36,10 @@ async function main() {
     },
   });
 
-  await prisma.user.create({
-    data: {
+  await prisma.user.upsert({
+    where: { email: "user@acme.dev" },
+    update: {},
+    create: {
       email: "user@acme.dev",
       passwordHash: userPasswordHash,
       role: Role.ORG_USER,
@@ -36,8 +47,10 @@ async function main() {
     },
   });
 
-  await prisma.user.create({
-    data: {
+  await prisma.user.upsert({
+    where: { email: "user@riverside.dev" },
+    update: {},
+    create: {
       email: "user@riverside.dev",
       passwordHash: userPasswordHash,
       role: Role.ORG_USER,
@@ -45,8 +58,10 @@ async function main() {
     },
   });
 
-  const patientA1 = await prisma.patient.create({
-    data: {
+  const patientA1 = await prisma.patient.upsert({
+    where: { orgId_mrn: { orgId: orgA.id, mrn: "MRN-A-001" } },
+    update: {},
+    create: {
       orgId: orgA.id,
       firstName: "John",
       lastName: "Doe",
@@ -57,8 +72,10 @@ async function main() {
     },
   });
 
-  const patientA2 = await prisma.patient.create({
-    data: {
+  const patientA2 = await prisma.patient.upsert({
+    where: { orgId_mrn: { orgId: orgA.id, mrn: "MRN-A-002" } },
+    update: {},
+    create: {
       orgId: orgA.id,
       firstName: "Jane",
       lastName: "Smith",
@@ -69,8 +86,10 @@ async function main() {
     },
   });
 
-  const patientB1 = await prisma.patient.create({
-    data: {
+  const patientB1 = await prisma.patient.upsert({
+    where: { orgId_mrn: { orgId: orgB.id, mrn: "MRN-B-001" } },
+    update: {},
+    create: {
       orgId: orgB.id,
       firstName: "Robert",
       lastName: "Johnson",
@@ -81,8 +100,10 @@ async function main() {
     },
   });
 
-  await prisma.device.create({
-    data: {
+  await prisma.device.upsert({
+    where: { deviceId: "100224300182" },
+    update: {},
+    create: {
       deviceId: "100224300182",
       modelNumber: "TMB-2092-G",
       imei: "867420043349754",
@@ -92,8 +113,10 @@ async function main() {
     },
   });
 
-  await prisma.device.create({
-    data: {
+  await prisma.device.upsert({
+    where: { deviceId: "112233445566" },
+    update: {},
+    create: {
       deviceId: "112233445566",
       modelNumber: "GBS-2104-G",
       imei: "864475041535658",
@@ -103,8 +126,10 @@ async function main() {
     },
   });
 
-  await prisma.device.create({
-    data: {
+  await prisma.device.upsert({
+    where: { deviceId: "351358819062347" },
+    update: {},
+    create: {
       deviceId: "351358819062347",
       modelNumber: "BM1000",
       imei: "351358819062347",
