@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Slider } from "@/components/ui/slider";
 import {
   Select,
   SelectContent,
@@ -46,6 +47,11 @@ export function DeviceDetailPage() {
   const [toDate, setToDate] = useState("");
   const [page, setPage] = useState(1);
   const [exporting, setExporting] = useState(false);
+
+  // AHA and ACC standard normal ranges for BP and pulse
+  const [sysLimits, setSysLimits] = useState([90, 120]);
+  const [diaLimits, setDiaLimits] = useState([60, 80]);
+  const [pulseLimits, setPulseLimits] = useState([60, 100]);
 
   const from = fromDate ? toStartOfDayIso(fromDate) : undefined;
   const to = toDate ? toEndOfDayIso(toDate) : undefined;
@@ -105,6 +111,7 @@ export function DeviceDetailPage() {
   const firstEventPayload = events.length > 0 ? events[0].payload : undefined;
   const telemetryColumns = getTelemetryColumns(device.modelNumber, firstEventPayload);
   const hasCustomTimestamp = telemetryColumns.some((c) => c.label.toLowerCase().includes("timestamp"));
+  const hasBPColumns = telemetryColumns.some((c) => c.metricKey === "sys" || c.metricKey === "dia" || c.metricKey === "pulse");
 
   return (
     <div className="space-y-6">
@@ -175,6 +182,34 @@ export function DeviceDetailPage() {
             )}
           </CardContent>
         </Card>
+
+        {hasBPColumns && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Display Thresholds (AHA/ACC)</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <Label>Systolic (Normal: {sysLimits[0]} - {sysLimits[1]})</Label>
+                </div>
+                <Slider min={50} max={200} step={1} value={sysLimits} onValueChange={(v) => setSysLimits(v as number[])} />
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <Label>Diastolic (Normal: {diaLimits[0]} - {diaLimits[1]})</Label>
+                </div>
+                <Slider min={30} max={130} step={1} value={diaLimits} onValueChange={(v) => setDiaLimits(v as number[])} />
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <Label>Pulse (Normal: {pulseLimits[0]} - {pulseLimits[1]})</Label>
+                </div>
+                <Slider min={30} max={180} step={1} value={pulseLimits} onValueChange={(v) => setPulseLimits(v as number[])} />
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <div>
@@ -241,14 +276,42 @@ export function DeviceDetailPage() {
                           <TableCell>{new Date(event.recordedAt).toLocaleString()}</TableCell>
                         )}
                         {telemetryColumns.map((column) => {
-                          const status = column.metricKey
-                            ? getVitalStatus(
-                                getThresholdFor(patientThresholds, column.metricKey),
-                                column.getNumeric?.(data)
-                              )
-                            : null;
+                          const value = column.getNumeric?.(data);
+                          let statusClass: string | undefined = undefined;
+
+                          if (column.metricKey === "sys") {
+                            statusClass =
+                              value === undefined
+                                ? undefined
+                                : value < sysLimits[0] || value > sysLimits[1]
+                                  ? "text-red-600 font-semibold"
+                                  : "text-foreground font-normal";
+                          } else if (column.metricKey === "dia") {
+                            statusClass =
+                              value === undefined
+                                ? undefined
+                                : value < diaLimits[0] || value > diaLimits[1]
+                                  ? "text-red-600 font-semibold"
+                                  : "text-foreground font-normal";
+                          } else if (column.metricKey === "pulse") {
+                            statusClass =
+                              value === undefined
+                                ? undefined
+                                : value < pulseLimits[0] || value > pulseLimits[1]
+                                  ? "text-red-600 font-semibold"
+                                  : "text-foreground font-normal";
+                          } else {
+                            const status = column.metricKey
+                              ? getVitalStatus(
+                                  getThresholdFor(patientThresholds, column.metricKey),
+                                  value
+                                )
+                              : null;
+                            statusClass = status ? VITAL_STATUS_CLASS[status] : undefined;
+                          }
+
                           return (
-                            <TableCell key={column.label} className={status ? VITAL_STATUS_CLASS[status] : undefined}>
+                            <TableCell key={column.label} className={statusClass}>
                               {column.get(data)}
                             </TableCell>
                           );
