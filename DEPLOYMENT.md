@@ -20,6 +20,14 @@ Render can automatically build and deploy this unified repository using the root
 
 Render will build the frontend, build the backend, run your Prisma database migrations, and start the unified server.
 
+### 3. Domains and URLs
+When you deploy to Render, you automatically receive a free, secure `https` subdomain (e.g., `https://telemetry-app.onrender.com`). This includes an SSL certificate out of the box, allowing your app to work securely without extra configuration.
+
+**Custom Domains**: If you prefer a custom domain:
+- **Free Options**: You can acquire a free domain via the [GitHub Student Developer Pack](https://education.github.com/pack) if you are a student, or via services like [EU.org](https://nic.eu.org/).
+- **Paid Options**: You can purchase a professional `.com`, `.app`, or `.dev` domain through providers like Namecheap or Cloudflare.
+Once you have your custom domain, you can easily attach it in the **Settings** > **Custom Domains** section of your Render Web Service.
+
 ### Environment Variables Reference
 | Variable | Description | Example |
 |----------|-------------|---------|
