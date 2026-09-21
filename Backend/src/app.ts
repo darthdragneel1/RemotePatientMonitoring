@@ -47,8 +47,9 @@ app.get("/health", async (_req, res) => {
 const frontendDistPath = path.join(__dirname, "../public");
 app.use(express.static(frontendDistPath));
 
-// Catch-all route to serve the React app (for client-side routing)
-app.get("*", (req, res, next) => {
+// Catch-all middleware to serve the React app (for client-side routing)
+app.use((req, res, next) => {
+  if (req.method !== "GET") return next();
   const apiPrefixes = ["/auth", "/ingest", "/patients", "/devices", "/admin", "/invites", "/forward", "/health"];
   if (apiPrefixes.some(prefix => req.path.startsWith(prefix))) {
     return next();
