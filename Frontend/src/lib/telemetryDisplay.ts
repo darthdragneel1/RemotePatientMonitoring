@@ -35,6 +35,27 @@ const MMOL_TO_MGDL = 18.0182;
 
 const SPHYGMOMANOMETER_COLUMNS: TelemetryColumn[] = [
   {
+    label: "Timestamp",
+    get: (d) => {
+      const ts = d.timestamp ?? d.measureTime ?? d.measure_time;
+      return ts ? String(ts) : "—";
+    },
+  },
+  {
+    label: "Timezone",
+    get: (d) => {
+      const tz = d.timezone ?? d.timeZone;
+      return tz !== undefined ? String(tz) : "—";
+    },
+  },
+  {
+    label: "Battery",
+    get: (d) => {
+      const bat = num(d, "battery") ?? num(d, "bat") ?? num(d, "batt") ?? num(d, "voltage");
+      return bat !== undefined ? String(bat) : "—";
+    },
+  },
+  {
     label: "Systolic",
     get: (d) => (num(d, "sys") !== undefined ? `${num(d, "sys")} mmHg` : "—"),
     metricKey: "sys",
@@ -51,20 +72,6 @@ const SPHYGMOMANOMETER_COLUMNS: TelemetryColumn[] = [
     get: (d) => (num(d, "pul") !== undefined ? `${num(d, "pul")} bpm` : "—"),
     metricKey: "pulse",
     getNumeric: (d) => num(d, "pul"),
-  },
-  {
-    label: "Irregular Heartbeat",
-    get: (d) => {
-      const v = bool(d, "ihb");
-      return v === undefined ? "—" : v ? "Yes" : "No";
-    },
-  },
-  {
-    label: "Hand Shaking",
-    get: (d) => {
-      const v = bool(d, "hand");
-      return v === undefined ? "—" : v ? "Detected" : "None";
-    },
   },
 ];
 
