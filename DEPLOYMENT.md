@@ -40,6 +40,7 @@ When you deploy to Render, you automatically receive a free, secure `https` subd
 | `JWT_SECRET`           | A secure random string for signing auth tokens             | `super-secret-random-string`                   |
 | `INGEST_API_KEY_NAME`  | Header name expected by MioConnect                         | `x-mioconnect-key`                             |
 | `INGEST_API_KEY_VALUE` | Secure API key for MioConnect to authenticate              | `generate-a-secure-key-here`                   |
+| `RESEND_API_KEY`       | (Optional) Resend API key for sending invite emails        | `re_123456789...`                              |
 | `FRONTEND_URL`         | Optional, used for CORS overrides (defaults to the origin) | `https://your-render-app.onrender.com`         |
 | `SEED_DB`              | Set to `true` to automatically seed the database on startup (for fresh deployments). **Remove or set to false after it runs.** | `true`                                           |
 
