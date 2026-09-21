@@ -35,4 +35,4 @@ COPY --from=backend-builder /app/Backend/dist ./dist
 COPY --from=frontend-builder /app/Frontend/dist ./public
 
 EXPOSE 4000
-CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
+CMD ["sh", "-c", "npx prisma migrate deploy && if [ \"$SEED_DB\" = \"true\" ]; then npx prisma db seed; fi && npm start"]
