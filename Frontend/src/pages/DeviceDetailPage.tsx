@@ -100,9 +100,11 @@ export function DeviceDetailPage() {
     return <p className="text-muted-foreground">Device not found.</p>;
   }
 
-  const telemetryColumns = getTelemetryColumns(device.modelNumber);
   const patientThresholds = device.patient?.vitalThresholds;
   const events = telemetryPage?.events ?? [];
+  const firstEventPayload = events.length > 0 ? events[0].payload : undefined;
+  const telemetryColumns = getTelemetryColumns(device.modelNumber, firstEventPayload);
+  const hasCustomTimestamp = telemetryColumns.some((c) => c.label.toLowerCase().includes("timestamp"));
 
   return (
     <div className="space-y-6">
@@ -224,7 +226,7 @@ export function DeviceDetailPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Recorded At</TableHead>
+                    {!hasCustomTimestamp && <TableHead>Recorded At</TableHead>}
                     {telemetryColumns.map((column) => (
                       <TableHead key={column.label}>{column.label}</TableHead>
                     ))}
@@ -235,7 +237,9 @@ export function DeviceDetailPage() {
                     const data = getTelemetryData(event.payload);
                     return (
                       <TableRow key={event.id}>
-                        <TableCell>{new Date(event.recordedAt).toLocaleString()}</TableCell>
+                        {!hasCustomTimestamp && (
+                          <TableCell>{new Date(event.recordedAt).toLocaleString()}</TableCell>
+                        )}
                         {telemetryColumns.map((column) => {
                           const status = column.metricKey
                             ? getVitalStatus(

@@ -30,26 +30,26 @@ function num(data: TelemetryData, key: string): number | undefined {
 // mmol/L -> mg/dL, the standard clinical conversion factor.
 const MMOL_TO_MGDL = 18.0182;
 
-const SPHYGMOMANOMETER_COLUMNS: TelemetryColumn[] = [
+const BPM_GEN2_COLUMNS: TelemetryColumn[] = [
   {
     label: "Timestamp",
     get: (d) => {
-      const ts = d.timestamp ?? d.measureTime ?? d.measure_time;
-      return ts ? String(ts) : "—";
+      const ts = num(d, "ts");
+      return ts ? new Date(ts * 1000).toLocaleString() : "—";
     },
   },
   {
     label: "Timezone",
     get: (d) => {
-      const tz = d.timezone ?? d.timeZone;
-      return tz !== undefined ? String(tz) : "—";
+      const tz = d.tz;
+      return typeof tz === "string" ? tz : "—";
     },
   },
   {
     label: "Battery",
     get: (d) => {
-      const bat = num(d, "battery") ?? num(d, "bat") ?? num(d, "batt") ?? num(d, "voltage");
-      return bat !== undefined ? String(bat) : "—";
+      const bat = num(d, "bat");
+      return bat !== undefined ? `${bat}%` : "—";
     },
   },
   {
@@ -156,7 +156,7 @@ const PULSE_OXIMETER_COLUMNS: TelemetryColumn[] = [
 ];
 
 const COLUMNS_BY_MODEL: Record<string, TelemetryColumn[]> = {
-  "TMB-2092-G": SPHYGMOMANOMETER_COLUMNS, // Sphygmomanometer (Transtek BPM Gen2)
+  "TMB-2092-G": BPM_GEN2_COLUMNS, // Sphygmomanometer (Transtek BPM Gen2)
   "GBS-2104-G": WEIGHT_SCALE_COLUMNS, // Weight Scale (Transtek Scale Gen2)
   "TMB-2282-G": GLUCOSE_METER_COLUMNS, // Blood Glucose Meter (Transtek BGM Gen1)
   BM1000: PULSE_OXIMETER_COLUMNS, // Pulse Oximeter (Transtek Gen1)
@@ -167,7 +167,12 @@ const FALLBACK_COLUMN: TelemetryColumn = {
   get: (d) => JSON.stringify(d),
 };
 
-export function getTelemetryColumns(modelNumber: string | null | undefined): TelemetryColumn[] {
+export function getTelemetryColumns(modelNumber: string | null | undefined, firstPayload?: unknown): TelemetryColumn[] {
+  const data = getTelemetryData(firstPayload);
+  if (data.data_type === "bpm_gen2_measure") {
+    return BPM_GEN2_COLUMNS;
+  }
+  
   if (modelNumber && COLUMNS_BY_MODEL[modelNumber]) {
     return COLUMNS_BY_MODEL[modelNumber];
   }
