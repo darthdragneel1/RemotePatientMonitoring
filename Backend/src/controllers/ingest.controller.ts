@@ -43,6 +43,25 @@ function makeIngestHandler(kind: TelemetryKind) {
 
     const recordedAt = resolveRecordedAt(req.body?.createdAt);
 
+    // Auto-fill missing device metadata from the webhook payload
+    const updateData: any = {};
+    if (!device.modelNumber && typeof req.body?.modelNumber === "string" && req.body.modelNumber.trim()) {
+      updateData.modelNumber = req.body.modelNumber.trim();
+    }
+    if (!device.imei && typeof req.body?.imei === "string" && req.body.imei.trim()) {
+      updateData.imei = req.body.imei.trim();
+    }
+    if (!device.sn && typeof req.body?.sn === "string" && req.body.sn.trim()) {
+      updateData.sn = req.body.sn.trim();
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      await prisma.device.update({
+        where: { id: device.id },
+        data: updateData,
+      });
+    }
+
     await prisma.telemetryEvent.create({
       data: {
         deviceId: device.id,
