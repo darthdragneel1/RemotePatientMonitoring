@@ -49,13 +49,7 @@ export function useUpdateDevice(id: string) {
   });
 }
 
-export function useDeleteDevice() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => api.delete(`/devices/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["devices"] }),
-  });
-}
+
 
 export interface TelemetryFilters {
   kind?: TelemetryKind;

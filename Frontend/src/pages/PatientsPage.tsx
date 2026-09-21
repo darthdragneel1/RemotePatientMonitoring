@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { usePatients, useCreatePatient } from "@/hooks/usePatients";
+import { usePatients, useCreatePatient, useDeletePatient } from "@/hooks/usePatients";
 import { ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,42 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { VitalThresholdsEditor } from "@/components/VitalThresholdsEditor";
 import type { VitalThresholds } from "@/lib/types";
+
+function DeletePatientDialog({ patientId, patientName }: { patientId: string; patientName: string }) {
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const deletePatient = useDeletePatient();
+
+  async function handleDelete() {
+    setError(null);
+    try {
+      await deletePatient.mutateAsync(patientId);
+      toast.success("Patient removed");
+      setOpen(false);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Something went wrong");
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button variant="destructive" size="sm">Remove</Button>} />
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Remove Patient</DialogTitle>
+        </DialogHeader>
+        <p>Are you sure you want to remove <strong>{patientName}</strong>? This action cannot be undone.</p>
+        {error && <p className="text-sm text-destructive font-medium bg-destructive/10 p-2 rounded">{error}</p>}
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="destructive" onClick={handleDelete} disabled={deletePatient.isPending}>
+            {deletePatient.isPending ? "Removing…" : "Remove"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export function PatientsPage() {
   const { data: patients, isLoading } = usePatients();
@@ -134,6 +170,7 @@ export function PatientsPage() {
                 <TableHead>Date of Birth</TableHead>
                 <TableHead>MRN</TableHead>
                 <TableHead>Phone</TableHead>
+                <TableHead className="w-[100px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -149,6 +186,9 @@ export function PatientsPage() {
                   </TableCell>
                   <TableCell>{patient.mrn ?? "—"}</TableCell>
                   <TableCell>{patient.phone ?? "—"}</TableCell>
+                  <TableCell>
+                    <DeletePatientDialog patientId={patient.id} patientName={`${patient.firstName} ${patient.lastName}`} />
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

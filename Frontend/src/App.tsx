@@ -7,6 +7,7 @@ import { PatientsPage } from "@/pages/PatientsPage";
 import { PatientDetailPage } from "@/pages/PatientDetailPage";
 import { OrganizationsPage } from "@/pages/admin/OrganizationsPage";
 import { InvitesPage } from "@/pages/admin/InvitesPage";
+import { UsersPage } from "@/pages/admin/UsersPage";
 import { AppLayout } from "@/components/AppLayout";
 import { ProtectedRoute, RequireRole } from "@/components/ProtectedRoute";
 
@@ -26,6 +27,7 @@ export function App() {
 
           <Route element={<RequireRole role="SUPER_ADMIN" />}>
             <Route path="/admin/organizations" element={<OrganizationsPage />} />
+            <Route path="/admin/users" element={<UsersPage />} />
             <Route path="/admin/invites" element={<InvitesPage />} />
           </Route>
         </Route>

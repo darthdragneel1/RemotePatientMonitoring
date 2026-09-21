@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { useOrganizations, useCreateOrganization } from "@/hooks/useAdmin";
+import { useOrganizations, useCreateOrganization, useDeleteOrganization } from "@/hooks/useAdmin";
 import { ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,42 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+function DeleteOrganizationDialog({ orgId, orgName }: { orgId: string; orgName: string }) {
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const deleteOrganization = useDeleteOrganization();
+
+  async function handleDelete() {
+    setError(null);
+    try {
+      await deleteOrganization.mutateAsync(orgId);
+      toast.success("Organization removed");
+      setOpen(false);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Something went wrong");
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button variant="destructive" size="sm">Remove</Button>} />
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Remove Organization</DialogTitle>
+        </DialogHeader>
+        <p>Are you sure you want to remove <strong>{orgName}</strong>? This action cannot be undone.</p>
+        {error && <p className="text-sm text-destructive font-medium bg-destructive/10 p-2 rounded">{error}</p>}
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="destructive" onClick={handleDelete} disabled={deleteOrganization.isPending}>
+            {deleteOrganization.isPending ? "Removing…" : "Remove"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export function OrganizationsPage() {
   const { data: organizations, isLoading } = useOrganizations();
@@ -79,6 +115,7 @@ export function OrganizationsPage() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Created</TableHead>
+                <TableHead className="w-[100px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -86,6 +123,9 @@ export function OrganizationsPage() {
                 <TableRow key={org.id}>
                   <TableCell className="font-medium">{org.name}</TableCell>
                   <TableCell>{new Date(org.createdAt).toLocaleDateString()}</TableCell>
+                  <TableCell>
+                    <DeleteOrganizationDialog orgId={org.id} orgName={org.name} />
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

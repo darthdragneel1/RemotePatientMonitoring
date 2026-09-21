@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { Organization, Role } from "@/lib/types";
+import type { Organization, Role, User } from "@/lib/types";
 
 export interface Invite {
   id: string;
@@ -23,6 +23,29 @@ export function useCreateOrganization() {
   return useMutation({
     mutationFn: (data: { name: string }) => api.post<{ organization: Organization }>("/admin/organizations", data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["organizations"] }),
+  });
+}
+
+export function useDeleteOrganization() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/admin/organizations/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["organizations"] }),
+  });
+}
+
+export function useUsers() {
+  return useQuery({
+    queryKey: ["users"],
+    queryFn: () => api.get<{ users: User[] }>("/admin/users").then((r) => r.users),
+  });
+}
+
+export function useDeleteUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/admin/users/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["users"] }),
   });
 }
 

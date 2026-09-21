@@ -20,6 +20,37 @@ export async function createOrganization(req: Request, res: Response) {
   res.status(201).json({ organization });
 }
 
+export async function deleteOrganization(req: Request, res: Response) {
+  const orgId = param(req, "id");
+  try {
+    await prisma.organization.delete({ where: { id: orgId } });
+    res.status(204).send();
+  } catch (err) {
+    res.status(400).json({ error: "Cannot delete organization. Ensure all associated users and patients are removed first." });
+  }
+}
+
+export async function listUsers(_req: Request, res: Response) {
+  const users = await prisma.user.findMany({
+    orderBy: { email: "asc" },
+    include: { org: { select: { id: true, name: true } } },
+  });
+  res.json({ users });
+}
+
+export async function deleteUser(req: Request, res: Response) {
+  const userId = param(req, "id");
+  if (req.user?.userId === userId) {
+    return res.status(400).json({ error: "Cannot delete your own account." });
+  }
+  try {
+    await prisma.user.delete({ where: { id: userId } });
+    res.status(204).send();
+  } catch (err) {
+    res.status(404).json({ error: "User not found" });
+  }
+}
+
 export async function listInvites(req: Request, res: Response) {
   const invites = await prisma.invite.findMany({
     where: { acceptedAt: null },

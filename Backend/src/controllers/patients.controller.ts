@@ -65,10 +65,15 @@ export async function updatePatient(req: Request, res: Response) {
 export async function deletePatient(req: Request, res: Response) {
   const existing = await prisma.patient.findFirst({
     where: { id: param(req, "id"), ...orgScope(req) },
+    include: { devices: true },
   });
 
   if (!existing) {
     return res.status(404).json({ error: "Patient not found" });
+  }
+
+  if (existing.devices && existing.devices.length > 0) {
+    return res.status(400).json({ error: "Cannot delete patient with assigned devices. Unassign devices first." });
   }
 
   await prisma.patient.delete({ where: { id: existing.id } });

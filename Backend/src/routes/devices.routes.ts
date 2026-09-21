@@ -12,7 +12,6 @@ import {
   getDevice,
   createDevice,
   updateDevice,
-  deleteDevice,
 } from "../controllers/devices.controller";
 import {
   listDeviceTelemetry,
@@ -28,8 +27,6 @@ devicesRouter.get("/", listDevices);
 devicesRouter.get("/:id", getDevice);
 devicesRouter.post("/", validateBody(createDeviceSchema), createDevice);
 devicesRouter.patch("/:id", validateBody(updateDeviceSchema), updateDevice);
-devicesRouter.delete("/:id", deleteDevice);
-
 devicesRouter.get("/:id/telemetry", validateQuery(telemetryQuerySchema), listDeviceTelemetry);
 devicesRouter.get("/:id/telemetry/latest", latestDeviceTelemetry);
 devicesRouter.get("/:id/telemetry/export", validateQuery(telemetryExportQuerySchema), exportDeviceTelemetry);

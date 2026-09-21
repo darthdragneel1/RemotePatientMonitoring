@@ -86,15 +86,3 @@ export async function updateDevice(req: Request, res: Response) {
   res.json({ device });
 }
 
-export async function deleteDevice(req: Request, res: Response) {
-  const existing = await prisma.device.findFirst({
-    where: { id: param(req, "id"), ...orgScope(req) },
-  });
-
-  if (!existing) {
-    return res.status(404).json({ error: "Device not found" });
-  }
-
-  await prisma.device.delete({ where: { id: existing.id } });
-  res.status(204).send();
-}

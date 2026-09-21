@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import { useDevices, useCreateDevice } from "@/hooks/useDevices";
+import { useDevices, useCreateDevice, useUpdateDevice } from "@/hooks/useDevices";
 import { usePatients } from "@/hooks/usePatients";
 import { ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,42 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+function UnassignDeviceDialog({ deviceId, deviceName }: { deviceId: string; deviceName: string }) {
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const updateDevice = useUpdateDevice(deviceId);
+
+  async function handleUnassign() {
+    setError(null);
+    try {
+      await updateDevice.mutateAsync({ patientId: null });
+      toast.success("Device unassigned");
+      setOpen(false);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Something went wrong");
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button variant="outline" size="sm">Unassign</Button>} />
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Unassign Device</DialogTitle>
+        </DialogHeader>
+        <p>Are you sure you want to unassign device <strong>{deviceName}</strong> from its current patient?</p>
+        {error && <p className="text-sm text-destructive font-medium bg-destructive/10 p-2 rounded">{error}</p>}
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="destructive" onClick={handleUnassign} disabled={updateDevice.isPending}>
+            {updateDevice.isPending ? "Unassigning…" : "Unassign"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export function DevicesPage() {
   const { user } = useAuth();
@@ -145,6 +181,7 @@ export function DevicesPage() {
                 <TableHead>Model</TableHead>
                 <TableHead>Patient</TableHead>
                 {user?.role === "SUPER_ADMIN" && <TableHead>Organization</TableHead>}
+                <TableHead className="w-[100px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -160,6 +197,9 @@ export function DevicesPage() {
                     {device.patient ? `${device.patient.firstName} ${device.patient.lastName}` : "Unassigned"}
                   </TableCell>
                   {user?.role === "SUPER_ADMIN" && <TableCell>{device.org?.name ?? "—"}</TableCell>}
+                  <TableCell>
+                    {device.patient && <UnassignDeviceDialog deviceId={device.id} deviceName={device.deviceId} />}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
