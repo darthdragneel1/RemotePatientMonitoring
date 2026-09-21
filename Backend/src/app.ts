@@ -20,12 +20,12 @@ app.use(cors({ origin: process.env.FRONTEND_URL ?? "http://localhost:5173", cred
 app.use(express.json());
 app.use(cookieParser());
 
-app.use("/auth", authRouter);
-app.use("/ingest", ingestRouter);
-app.use("/patients", patientsRouter);
-app.use("/devices", devicesRouter);
-app.use("/admin", adminRouter);
-app.use("/invites", invitesRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/ingest", ingestRouter);
+app.use("/api/patients", patientsRouter);
+app.use("/api/devices", devicesRouter);
+app.use("/api/admin", adminRouter);
+app.use("/api/invites", invitesRouter);
 
 // MioConnect's current dashboard derives fixed sub-paths from a single base
 // URL rather than letting the forwarding path be typed freely (as the
@@ -50,7 +50,7 @@ app.use(express.static(frontendDistPath));
 // Catch-all middleware to serve the React app (for client-side routing)
 app.use((req, res, next) => {
   if (req.method !== "GET") return next();
-  const apiPrefixes = ["/auth", "/ingest", "/patients", "/devices", "/admin", "/invites", "/forward", "/health"];
+  const apiPrefixes = ["/api", "/forward", "/health"];
   if (apiPrefixes.some(prefix => req.path.startsWith(prefix))) {
     return next();
   }
