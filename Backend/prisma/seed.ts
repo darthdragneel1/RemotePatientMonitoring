@@ -4,7 +4,8 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  const passwordHash = await bcrypt.hash("password123", 10);
+  const adminPasswordHash = await bcrypt.hash("Matsumoto/\\1290", 10);
+  const userPasswordHash = await bcrypt.hash("password123", 10);
 
   const orgA = await prisma.organization.create({
     data: { name: "Acme Health Clinic" },
@@ -15,8 +16,8 @@ async function main() {
 
   await prisma.user.create({
     data: {
-      email: "admin@telemetry.dev",
-      passwordHash,
+      email: "abhishekkurra1999@gmail.com",
+      passwordHash: adminPasswordHash,
       role: Role.SUPER_ADMIN,
     },
   });
@@ -24,7 +25,7 @@ async function main() {
   await prisma.user.create({
     data: {
       email: "user@acme.dev",
-      passwordHash,
+      passwordHash: userPasswordHash,
       role: Role.ORG_USER,
       orgId: orgA.id,
     },
@@ -33,7 +34,7 @@ async function main() {
   await prisma.user.create({
     data: {
       email: "user@riverside.dev",
-      passwordHash,
+      passwordHash: userPasswordHash,
       role: Role.ORG_USER,
       orgId: orgB.id,
     },
