@@ -65,8 +65,12 @@ export function AssignDeviceDialog({ patientId }: { patientId: string }) {
 
   function onScanSuccess(decodedText: string) {
     if (isProcessing) return;
+    
+    // Extract only the last 12 characters of the scanned barcode
+    const finalId = decodedText.slice(-12);
+    
     toast.success("Code scanned successfully! Please confirm details to link.");
-    setManualId(decodedText);
+    setManualId(finalId);
     setIsScanning(false);
   }
 
