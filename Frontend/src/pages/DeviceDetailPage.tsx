@@ -258,69 +258,71 @@ export function DeviceDetailPage() {
             <p className="text-muted-foreground">No telemetry recorded in this range.</p>
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {!hasCustomTimestamp && <TableHead>Recorded At</TableHead>}
-                    {telemetryColumns.map((column) => (
-                      <TableHead key={column.label}>{column.label}</TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {events.map((event) => {
-                    const data = getTelemetryData(event.payload);
-                    return (
-                      <TableRow key={event.id}>
-                        {!hasCustomTimestamp && (
-                          <TableCell>{new Date(event.recordedAt).toLocaleString()}</TableCell>
-                        )}
-                        {telemetryColumns.map((column) => {
-                          const value = column.getNumeric?.(data);
-                          let statusClass: string | undefined = undefined;
+              <div className="overflow-x-auto rounded-md border border-border">
+                <Table className="min-w-full">
+                  <TableHeader>
+                    <TableRow>
+                      {!hasCustomTimestamp && <TableHead className="whitespace-nowrap">Recorded At</TableHead>}
+                      {telemetryColumns.map((column) => (
+                        <TableHead key={column.label} className="whitespace-nowrap">{column.label}</TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {events.map((event) => {
+                      const data = getTelemetryData(event.payload);
+                      return (
+                        <TableRow key={event.id}>
+                          {!hasCustomTimestamp && (
+                            <TableCell className="whitespace-nowrap">{new Date(event.recordedAt).toLocaleString()}</TableCell>
+                          )}
+                          {telemetryColumns.map((column) => {
+                            const value = column.getNumeric?.(data);
+                            let statusClass: string | undefined = undefined;
 
-                          if (column.metricKey === "sys") {
-                            statusClass =
-                              value === undefined
-                                ? undefined
-                                : value < sysLimits[0] || value > sysLimits[1]
-                                  ? "text-red-600 font-semibold"
-                                  : "text-foreground font-normal";
-                          } else if (column.metricKey === "dia") {
-                            statusClass =
-                              value === undefined
-                                ? undefined
-                                : value < diaLimits[0] || value > diaLimits[1]
-                                  ? "text-red-600 font-semibold"
-                                  : "text-foreground font-normal";
-                          } else if (column.metricKey === "pulse") {
-                            statusClass =
-                              value === undefined
-                                ? undefined
-                                : value < pulseLimits[0] || value > pulseLimits[1]
-                                  ? "text-red-600 font-semibold"
-                                  : "text-foreground font-normal";
-                          } else {
-                            const status = column.metricKey
-                              ? getVitalStatus(
-                                  getThresholdFor(patientThresholds, column.metricKey),
-                                  value
-                                )
-                              : null;
-                            statusClass = status ? VITAL_STATUS_CLASS[status] : undefined;
-                          }
+                            if (column.metricKey === "sys") {
+                              statusClass =
+                                value === undefined
+                                  ? undefined
+                                  : value < sysLimits[0] || value > sysLimits[1]
+                                    ? "text-red-600 font-semibold"
+                                    : "text-foreground font-normal";
+                            } else if (column.metricKey === "dia") {
+                              statusClass =
+                                value === undefined
+                                  ? undefined
+                                  : value < diaLimits[0] || value > diaLimits[1]
+                                    ? "text-red-600 font-semibold"
+                                    : "text-foreground font-normal";
+                            } else if (column.metricKey === "pulse") {
+                              statusClass =
+                                value === undefined
+                                  ? undefined
+                                  : value < pulseLimits[0] || value > pulseLimits[1]
+                                    ? "text-red-600 font-semibold"
+                                    : "text-foreground font-normal";
+                            } else {
+                              const status = column.metricKey
+                                ? getVitalStatus(
+                                    getThresholdFor(patientThresholds, column.metricKey),
+                                    value
+                                  )
+                                : null;
+                              statusClass = status ? VITAL_STATUS_CLASS[status] : undefined;
+                            }
 
-                          return (
-                            <TableCell key={column.label} className={statusClass}>
-                              {column.get(data)}
-                            </TableCell>
-                          );
-                        })}
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                            return (
+                              <TableCell key={column.label} className={`${statusClass ?? ""} whitespace-nowrap`}>
+                                {column.get(data)}
+                              </TableCell>
+                            );
+                          })}
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
 
               {telemetryPage && telemetryPage.totalPages > 1 && (
                 <div className="mt-4 flex items-center justify-between text-sm">

@@ -149,7 +149,7 @@ export function PatientsPage() {
                   </Select>
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First Name</Label>
                   <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
@@ -198,36 +198,38 @@ export function PatientsPage() {
         ) : patients?.length === 0 ? (
           <p className="text-muted-foreground">No patients yet — add one to get started.</p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Date of Birth</TableHead>
-                <TableHead>MRN</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead className="w-[100px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {patients?.map((patient) => (
-                <TableRow key={patient.id}>
-                  <TableCell>
-                    <Link to={`/patients/${patient.id}`} className="font-medium text-primary hover:underline">
-                      {patient.firstName} {patient.lastName}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : "—"}
-                  </TableCell>
-                  <TableCell>{patient.mrn ?? "—"}</TableCell>
-                  <TableCell>{patient.phone ?? "—"}</TableCell>
-                  <TableCell>
-                    <DeletePatientDialog patientId={patient.id} patientName={`${patient.firstName} ${patient.lastName}`} />
-                  </TableCell>
+          <div className="overflow-x-auto rounded-md border border-border">
+            <Table className="min-w-full">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="whitespace-nowrap">Name</TableHead>
+                  <TableHead className="whitespace-nowrap">Date of Birth</TableHead>
+                  <TableHead className="whitespace-nowrap">MRN</TableHead>
+                  <TableHead className="whitespace-nowrap">Phone</TableHead>
+                  <TableHead className="w-[100px]"></TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {patients?.map((patient) => (
+                  <TableRow key={patient.id}>
+                    <TableCell className="whitespace-nowrap">
+                      <Link to={`/patients/${patient.id}`} className="font-medium text-primary hover:underline">
+                        {patient.firstName} {patient.lastName}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : "—"}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">{patient.mrn ?? "—"}</TableCell>
+                    <TableCell className="whitespace-nowrap">{patient.phone ?? "—"}</TableCell>
+                    <TableCell>
+                      <DeletePatientDialog patientId={patient.id} patientName={`${patient.firstName} ${patient.lastName}`} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </div>
     </div>

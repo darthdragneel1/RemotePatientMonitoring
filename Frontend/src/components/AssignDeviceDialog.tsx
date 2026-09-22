@@ -80,7 +80,7 @@ export function AssignDeviceDialog({ patientId }: { patientId: string }) {
         <QrCode className="h-4 w-4" />
         Scan & Link Device
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Link Device</DialogTitle>
           <DialogDescription>

@@ -201,36 +201,38 @@ export function DevicesPage() {
         ) : devices?.length === 0 ? (
           <p className="text-muted-foreground">No devices yet — add one to get started.</p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Device ID</TableHead>
-                <TableHead>Model</TableHead>
-                <TableHead>Patient</TableHead>
-                {user?.role === "SUPER_ADMIN" && <TableHead>Organization</TableHead>}
-                <TableHead className="w-[100px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {devices?.map((device) => (
-                <TableRow key={device.id}>
-                  <TableCell>
-                    <Link to={`/devices/${device.id}`} className="font-medium text-primary hover:underline">
-                      {device.deviceId}
-                    </Link>
-                  </TableCell>
-                  <TableCell>{device.modelNumber ?? "—"}</TableCell>
-                  <TableCell>
-                    {device.patient ? `${device.patient.firstName} ${device.patient.lastName}` : "Unassigned"}
-                  </TableCell>
-                  {user?.role === "SUPER_ADMIN" && <TableCell>{device.org?.name ?? "—"}</TableCell>}
-                  <TableCell>
-                    {device.patient && <UnassignDeviceDialog deviceId={device.id} deviceName={device.deviceId} />}
-                  </TableCell>
+          <div className="overflow-x-auto rounded-md border border-border">
+            <Table className="min-w-full">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="whitespace-nowrap">Device ID</TableHead>
+                  <TableHead className="whitespace-nowrap">Model</TableHead>
+                  <TableHead className="whitespace-nowrap">Patient</TableHead>
+                  {user?.role === "SUPER_ADMIN" && <TableHead className="whitespace-nowrap">Organization</TableHead>}
+                  <TableHead className="w-[100px]"></TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {devices?.map((device) => (
+                  <TableRow key={device.id}>
+                    <TableCell className="whitespace-nowrap">
+                      <Link to={`/devices/${device.id}`} className="font-medium text-primary hover:underline">
+                        {device.deviceId}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">{device.modelNumber ?? "—"}</TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {device.patient ? `${device.patient.firstName} ${device.patient.lastName}` : "Unassigned"}
+                    </TableCell>
+                    {user?.role === "SUPER_ADMIN" && <TableCell className="whitespace-nowrap">{device.org?.name ?? "—"}</TableCell>}
+                    <TableCell>
+                      {device.patient && <UnassignDeviceDialog deviceId={device.id} deviceName={device.deviceId} />}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </div>
     </div>
