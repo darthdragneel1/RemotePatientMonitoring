@@ -39,11 +39,10 @@ export function BarcodeScanner({ onScan, onError }: BarcodeScannerProps) {
       scannerRef.current = scanner;
 
       scanner.start(
-        // Request high resolution and rear camera
+        // iOS Safari is very strict about constraints. Requesting specific high-res 
+        // can cause the camera feed to go black. Keep it simple.
         { 
-          facingMode: "environment",
-          width: { ideal: 1920, min: 1280 },
-          height: { ideal: 1080, min: 720 },
+          facingMode: "environment"
         }, 
         {
           fps: 10,
