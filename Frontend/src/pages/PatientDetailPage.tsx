@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VitalThresholdsEditor } from "@/components/VitalThresholdsEditor";
+import { AssignDeviceDialog } from "@/components/AssignDeviceDialog";
 import { VITAL_METRICS } from "@/lib/vitalMetrics";
 import type { VitalThresholds } from "@/lib/types";
 
@@ -170,7 +171,10 @@ export function PatientDetailPage() {
       </Card>
 
       <div>
-        <h2 className="text-lg font-semibold">Linked Devices</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Linked Devices</h2>
+          <AssignDeviceDialog patientId={patient.id} />
+        </div>
         <div className="mt-4">
           {devices.length === 0 ? (
             <p className="text-muted-foreground">No devices linked to this patient.</p>
