@@ -73,8 +73,29 @@ export function useLiveTelemetry() {
             }
           );
           
-          const audio = new Audio("/alert.mp3");
-          audio.play().catch(e => console.log("Audio blocked:", e));
+          try {
+            const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+            if (AudioCtx) {
+              const ctx = new AudioCtx();
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              
+              // Double-beep (High Pitch)
+              osc.type = "sine";
+              osc.frequency.setValueAtTime(880, ctx.currentTime);
+              osc.frequency.setValueAtTime(1046.50, ctx.currentTime + 0.15);
+              
+              gain.gain.setValueAtTime(0.5, ctx.currentTime);
+              gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+              
+              osc.start(ctx.currentTime);
+              osc.stop(ctx.currentTime + 0.5);
+            }
+          } catch (e) {
+            console.error("Audio blocked:", e);
+          }
           
           if ("Notification" in window && Notification.permission === "granted") {
             new Notification(title, { body: bodyText, icon: "/favicon.ico" });
