@@ -3,6 +3,7 @@ import { TelemetryKind } from "@prisma/client";
 import { prisma } from "../db/prisma";
 
 import { telemetryEmitter } from "../services/telemetryEmitter";
+import { logAuditEvent } from "../utils/audit";
 
 /**
  * MioConnect forwards `createdAt` as a unix timestamp in seconds
@@ -79,6 +80,18 @@ function makeIngestHandler(kind: TelemetryKind) {
     });
 
     telemetryEmitter.emit("new-telemetry", { event: newEvent, device: deviceWithPatient });
+
+    const transmissionTimeMs = Date.now() - recordedAt.getTime();
+    await logAuditEvent("TELEMETRY_RECEIVED", {
+      orgId: device.orgId,
+      target: "Device",
+      targetId: device.id,
+      details: {
+        kind,
+        deviceId: device.deviceId,
+        transmissionTimeMs: transmissionTimeMs >= 0 ? transmissionTimeMs : null,
+      },
+    });
 
     res.status(200).json({ success: true });
   };
