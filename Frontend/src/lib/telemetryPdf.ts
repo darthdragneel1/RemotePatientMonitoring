@@ -28,6 +28,9 @@ export function downloadTelemetryPdf({
   from,
   to,
   patientThresholds,
+  patientName,
+  patientDob,
+  patientPhone,
 }: DownloadTelemetryPdfOptions) {
   const columns = getTelemetryColumns(modelNumber);
   const doc = new jsPDF();
