@@ -8,6 +8,8 @@ router.get("/telemetry", requireAuth, (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no"); // Disable proxy buffering for Nginx/Render
+  res.flushHeaders(); // Establish connection immediately
   
   const user = req.user!;
   

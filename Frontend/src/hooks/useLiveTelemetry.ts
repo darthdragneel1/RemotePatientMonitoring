@@ -1,8 +1,11 @@
 import { useEffect } from "react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import { getTelemetryColumns, getTelemetryData, getVitalStatus, getThresholdFor } from "@/lib/telemetryDisplay";
 
 export function useLiveTelemetry() {
+  const queryClient = useQueryClient();
+
   useEffect(() => {
     const url = `${import.meta.env.VITE_API_URL || ""}/api/live/telemetry`;
     const eventSource = new EventSource(url, { withCredentials: true });
@@ -10,9 +13,18 @@ export function useLiveTelemetry() {
     eventSource.onmessage = (messageEvent) => {
       try {
         const data = JSON.parse(messageEvent.data);
+        console.log("Live telemetry received:", data);
+        
         const { event: telemetry, device } = data;
         
-        if (!device || !telemetry || telemetry.kind !== "TELEMETRY") return;
+        if (!device || !telemetry) return;
+        
+        // Dynamically update UI tables by invalidating caches
+        queryClient.invalidateQueries({ queryKey: ["devices"] });
+        queryClient.invalidateQueries({ queryKey: ["patients"] });
+        queryClient.invalidateQueries({ queryKey: ["device", device.deviceId] });
+        
+        if (telemetry.kind !== "TELEMETRY") return;
         
         const columns = getTelemetryColumns(device.modelNumber, telemetry.payload);
         const rowData = getTelemetryData(telemetry.payload);
@@ -57,5 +69,5 @@ export function useLiveTelemetry() {
     };
     
     return () => eventSource.close();
-  }, []);
+  }, [queryClient]);
 }
