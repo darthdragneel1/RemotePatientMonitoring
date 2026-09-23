@@ -32,3 +32,7 @@ export const telemetryExportQuerySchema = z.object({
   from: z.iso.datetime().optional(),
   to: z.iso.datetime().optional(),
 });
+
+export const updateTelemetryCommunicationSchema = z.object({
+  communication: z.string().nullable(),
+});

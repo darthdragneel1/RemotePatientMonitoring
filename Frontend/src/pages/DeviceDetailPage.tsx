@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { useDevice, useDeviceTelemetry, useUpdateDevice, fetchDeviceTelemetryExport } from "@/hooks/useDevices";
+import { useDevice, useDeviceTelemetry, useUpdateDevice, fetchDeviceTelemetryExport, useUpdateTelemetryCommunication } from "@/hooks/useDevices";
 import { usePatients } from "@/hooks/usePatients";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,8 @@ import {
 } from "@/lib/telemetryDisplay";
 import { downloadTelemetryPdf } from "@/lib/telemetryPdf";
 import { ApiError } from "@/lib/api";
+import { CommunicationDialog } from "@/components/CommunicationDialog";
+import { FileEdit } from "lucide-react";
 
 const UNASSIGNED = "__unassigned__";
 
@@ -47,6 +49,13 @@ export function DeviceDetailPage() {
   const [toDate, setToDate] = useState("");
   const [page, setPage] = useState(1);
   const [exporting, setExporting] = useState(false);
+  const [commDialog, setCommDialog] = useState<{ isOpen: boolean; eventId: string; initialText: string | null }>({
+    isOpen: false,
+    eventId: "",
+    initialText: null,
+  });
+
+  const updateCommunication = useUpdateTelemetryCommunication(id!);
 
   // AHA and ACC standard normal ranges for BP and pulse
   const [sysLimits, setSysLimits] = useState([90, 120]);
@@ -72,6 +81,15 @@ export function DeviceDetailPage() {
   async function handleReassign(value: string | null) {
     await updateDevice.mutateAsync({ patientId: !value || value === UNASSIGNED ? null : value });
     toast.success("Patient assignment updated");
+  }
+
+  async function handleSaveCommunication(text: string) {
+    try {
+      await updateCommunication.mutateAsync({ eventId: commDialog.eventId, communication: text });
+      toast.success("Communication updated");
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Failed to update communication");
+    }
   }
 
   async function handleDownloadPdf() {
@@ -266,6 +284,8 @@ export function DeviceDetailPage() {
                       {telemetryColumns.map((column) => (
                         <TableHead key={column.label} className="whitespace-nowrap">{column.label}</TableHead>
                       ))}
+                      <TableHead className="whitespace-nowrap">Communication</TableHead>
+                      <TableHead className="whitespace-nowrap">Comm Timestamp</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -317,6 +337,35 @@ export function DeviceDetailPage() {
                               </TableCell>
                             );
                           })}
+                          <TableCell className="min-w-[150px] max-w-[300px]">
+                            {event.communication ? (
+                              <div className="flex items-start justify-between gap-2">
+                                <span className="truncate text-sm" title={event.communication}>
+                                  {event.communication}
+                                </span>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-6 w-6 shrink-0"
+                                  onClick={() => setCommDialog({ isOpen: true, eventId: event.id, initialText: event.communication || "" })}
+                                >
+                                  <FileEdit className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-7 text-xs"
+                                onClick={() => setCommDialog({ isOpen: true, eventId: event.id, initialText: "" })}
+                              >
+                                Add Note
+                              </Button>
+                            )}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                            {event.communicationAt ? new Date(event.communicationAt).toLocaleString() : "—"}
+                          </TableCell>
                         </TableRow>
                       );
                     })}
@@ -353,6 +402,13 @@ export function DeviceDetailPage() {
           )}
         </div>
       </div>
+
+      <CommunicationDialog
+        isOpen={commDialog.isOpen}
+        initialText={commDialog.initialText}
+        onClose={() => setCommDialog({ isOpen: false, eventId: "", initialText: null })}
+        onSave={handleSaveCommunication}
+      />
     </div>
   );
 }

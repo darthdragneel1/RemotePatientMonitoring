@@ -66,6 +66,8 @@ export interface TelemetryEvent {
   payload: Record<string, unknown>;
   recordedAt: string;
   createdAt: string;
+  communication?: string | null;
+  communicationAt?: string | null;
   deviceId: string;
 }
 

@@ -50,10 +50,12 @@ export function downloadTelemetryPdf({
   );
 
   autoTable(doc, {
-    head: [["Recorded At", ...columns.map((c) => c.label)]],
+    head: [["Recorded At", ...columns.map((c) => c.label), "Communication", "Comm Timestamp"]],
     body: events.map((event, i) => [
       new Date(event.recordedAt).toLocaleString(),
       ...columns.map((c) => c.get(rowData[i])),
+      event.communication || "—",
+      event.communicationAt ? new Date(event.communicationAt).toLocaleString() : "—"
     ]),
     startY: 34,
     styles: { fontSize: 8 },

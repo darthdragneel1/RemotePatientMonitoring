@@ -107,6 +107,9 @@ model TelemetryEvent {
   recordedAt DateTime
   createdAt  DateTime      @default(now())
 
+  communication   String?
+  communicationAt DateTime?
+
   deviceId String
   device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 

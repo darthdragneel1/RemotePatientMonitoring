@@ -107,3 +107,31 @@ export async function latestDeviceTelemetry(req: Request, res: Response) {
     latest: Object.fromEntries(kinds.map((kind, i) => [kind, latestByKind[i]])),
   });
 }
+
+export async function updateTelemetryCommunication(req: Request, res: Response) {
+  const device = await findScopedDevice(req);
+  if (!device) {
+    return res.status(404).json({ error: "Device not found" });
+  }
+
+  const eventId = param(req, "eventId");
+  const body = req.body as { communication?: string | null };
+
+  const event = await prisma.telemetryEvent.findFirst({
+    where: { id: eventId, deviceId: device.id },
+  });
+
+  if (!event) {
+    return res.status(404).json({ error: "Telemetry event not found" });
+  }
+
+  const updated = await prisma.telemetryEvent.update({
+    where: { id: event.id },
+    data: {
+      communication: body.communication,
+      communicationAt: new Date(),
+    },
+  });
+
+  res.json({ event: updated });
+}

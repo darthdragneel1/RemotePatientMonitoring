@@ -6,6 +6,7 @@ import {
   updateDeviceSchema,
   telemetryQuerySchema,
   telemetryExportQuerySchema,
+  updateTelemetryCommunicationSchema,
 } from "../schemas/device.schema";
 import {
   listDevices,
@@ -17,6 +18,7 @@ import {
   listDeviceTelemetry,
   latestDeviceTelemetry,
   exportDeviceTelemetry,
+  updateTelemetryCommunication,
 } from "../controllers/telemetry.controller";
 
 export const devicesRouter = Router();
@@ -30,3 +32,8 @@ devicesRouter.patch("/:id", validateBody(updateDeviceSchema), updateDevice);
 devicesRouter.get("/:id/telemetry", validateQuery(telemetryQuerySchema), listDeviceTelemetry);
 devicesRouter.get("/:id/telemetry/latest", latestDeviceTelemetry);
 devicesRouter.get("/:id/telemetry/export", validateQuery(telemetryExportQuerySchema), exportDeviceTelemetry);
+devicesRouter.patch(
+  "/:id/telemetry/:eventId/communication",
+  validateBody(updateTelemetryCommunicationSchema),
+  updateTelemetryCommunication
+);

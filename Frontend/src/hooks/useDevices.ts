@@ -87,6 +87,19 @@ export function useDeviceTelemetry(id: string | undefined, filters: TelemetryFil
   });
 }
 
+export function useUpdateTelemetryCommunication(deviceId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ eventId, communication }: { eventId: string; communication: string | null }) =>
+      api.patch<{ event: TelemetryEvent }>(`/devices/${deviceId}/telemetry/${eventId}/communication`, {
+        communication,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["devices", deviceId, "telemetry"] });
+    },
+  });
+}
+
 export function fetchDeviceTelemetryExport(
   id: string,
   filters: Pick<TelemetryFilters, "kind" | "from" | "to"> = {}
