@@ -16,6 +16,9 @@ interface DownloadTelemetryPdfOptions {
   from?: string;
   to?: string;
   patientThresholds?: VitalThresholds | null;
+  patientName?: string | null;
+  patientDob?: string | null;
+  patientPhone?: string | null;
 }
 
 export function downloadTelemetryPdf({
@@ -34,12 +37,20 @@ export function downloadTelemetryPdf({
 
   doc.setFontSize(10);
   doc.setTextColor(100);
+  
+  if (patientName) {
+    doc.text(`Patient: ${patientName}`, 14, 23);
+    doc.text(`DOB: ${patientDob || "N/A"} | Phone: ${patientPhone || "N/A"}`, 14, 28);
+  }
+
   const rangeLabel =
     from || to
       ? `${from ? new Date(from).toLocaleDateString() : "start"} – ${to ? new Date(to).toLocaleDateString() : "now"}`
       : "All time";
-  doc.text(`Range: ${rangeLabel}`, 14, 23);
-  doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28);
+  const startY = patientName ? 33 : 23;
+  
+  doc.text(`Range: ${rangeLabel}`, 14, startY);
+  doc.text(`Generated: ${new Date().toLocaleString()}`, 14, startY + 5);
 
   const rowData = events.map((event) => getTelemetryData(event.payload));
 
@@ -57,7 +68,7 @@ export function downloadTelemetryPdf({
       event.communication || "—",
       event.communicationAt ? new Date(event.communicationAt).toLocaleString() : "—"
     ]),
-    startY: 34,
+    startY: startY + 11,
     styles: { fontSize: 8 },
     headStyles: { fillColor: [37, 99, 235] }, // Clinical Blue theme primary
     didParseCell: (data) => {

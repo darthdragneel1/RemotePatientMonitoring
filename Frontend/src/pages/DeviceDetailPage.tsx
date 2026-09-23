@@ -101,6 +101,8 @@ export function DeviceDetailPage() {
         toast.error("No telemetry in this range to export");
         return;
       }
+      const patientData = device.patientId && patients ? patients.find(p => p.id === device.patientId) : null;
+      
       downloadTelemetryPdf({
         deviceLabel: device.deviceId,
         modelNumber: device.modelNumber,
@@ -108,6 +110,9 @@ export function DeviceDetailPage() {
         from,
         to,
         patientThresholds: device.patient?.vitalThresholds,
+        patientName: patientData ? `${patientData.firstName} ${patientData.lastName}` : null,
+        patientDob: patientData?.dateOfBirth,
+        patientPhone: patientData?.phone,
       });
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "Failed to generate PDF");

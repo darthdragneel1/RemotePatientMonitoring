@@ -21,7 +21,11 @@ export function CommunicationDialog({ isOpen, onClose, onSave, initialText }: Co
     }
   }, [isOpen, initialText]);
 
+  const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const isOverLimit = wordCount > 1000;
+
   const handleSave = () => {
+    if (isOverLimit) return;
     if (initialText && initialText !== text && !showConfirmation) {
       setShowConfirmation(true);
       return;
@@ -36,11 +40,11 @@ export function CommunicationDialog({ isOpen, onClose, onSave, initialText }: Co
         <DialogHeader>
           <DialogTitle>{initialText ? "Edit Communication" : "Add Communication"}</DialogTitle>
           <DialogDescription>
-            {initialText ? "Edit the communication note for this reading." : "Add a communication note for this reading."}
+            {initialText ? "Edit the communication note for this reading." : "Add a communication note for this reading. Max 1000 words."}
           </DialogDescription>
         </DialogHeader>
         
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-2 py-4">
           <Textarea 
             placeholder="Type your notes here..." 
             value={text} 
@@ -48,8 +52,11 @@ export function CommunicationDialog({ isOpen, onClose, onSave, initialText }: Co
             className="min-h-[150px]"
             disabled={showConfirmation}
           />
+          <div className={`text-xs text-right ${isOverLimit ? "text-destructive font-bold" : "text-muted-foreground"}`}>
+            {wordCount} / 1000 words
+          </div>
           {showConfirmation && (
-            <p className="text-sm font-medium text-destructive">
+            <p className="text-sm font-medium text-destructive mt-2">
               Are you sure you want to overwrite the existing communication note?
             </p>
           )}
@@ -65,7 +72,7 @@ export function CommunicationDialog({ isOpen, onClose, onSave, initialText }: Co
           }}>
             {showConfirmation ? "Cancel Edit" : "Cancel"}
           </Button>
-          <Button onClick={handleSave} variant={showConfirmation ? "destructive" : "default"}>
+          <Button onClick={handleSave} variant={showConfirmation ? "destructive" : "default"} disabled={isOverLimit}>
             {showConfirmation ? "Confirm Edit" : "Save"}
           </Button>
         </DialogFooter>

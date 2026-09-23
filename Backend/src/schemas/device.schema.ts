@@ -34,5 +34,8 @@ export const telemetryExportQuerySchema = z.object({
 });
 
 export const updateTelemetryCommunicationSchema = z.object({
-  communication: z.string().nullable(),
+  communication: z.string().nullable().refine((val) => {
+    if (!val) return true;
+    return val.trim().split(/\s+/).length <= 1000;
+  }, "Communication note cannot exceed 1000 words"),
 });
