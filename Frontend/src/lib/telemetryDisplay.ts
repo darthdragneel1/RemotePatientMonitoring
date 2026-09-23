@@ -217,6 +217,20 @@ export function getVitalStatus(
   return "green";
 }
 
+export function getVitalAbnormalityDirection(
+  threshold: VitalThreshold | null | undefined,
+  value: number | undefined
+): "High" | "Low" | null {
+  if (!threshold || value === undefined) return null;
+  const { redLow, orangeLow, orangeHigh, redHigh } = threshold;
+  
+  if (redHigh !== undefined && value > redHigh) return "High";
+  if (orangeHigh !== undefined && value > orangeHigh) return "High";
+  if (redLow !== undefined && value < redLow) return "Low";
+  if (orangeLow !== undefined && value < orangeLow) return "Low";
+  return null;
+}
+
 export function getThresholdFor(
   thresholds: VitalThresholds | null | undefined,
   metricKey: VitalMetricKey | undefined
