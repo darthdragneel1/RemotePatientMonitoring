@@ -32,6 +32,7 @@ export function useLiveTelemetry() {
         
         let isAbnormal = false;
         let abnormalDetails = "";
+        let normalDetails = "";
         
         for (const col of columns) {
           if (col.metricKey) {
@@ -39,12 +40,17 @@ export function useLiveTelemetry() {
             if (status === "red" || status === "orange") {
               isAbnormal = true;
               abnormalDetails += `${col.label}: ${col.get(rowData)}\n`;
+            } else if (status === "green" || status === null) {
+              const val = col.get(rowData);
+              if (val !== "—") normalDetails += `${col.label}: ${val}\n`;
             }
           }
         }
         
+        const deviceName = device.patient ? `${device.patient.firstName} ${device.patient.lastName}` : `Device ${device.deviceId}`;
+        
         if (isAbnormal) {
-          const title = `Abnormal reading for ${device.patient ? `${device.patient.firstName} ${device.patient.lastName}` : `Device ${device.deviceId}`}`;
+          const title = `Abnormal reading for ${deviceName}`;
           const body = abnormalDetails.trim();
           
           toast.error(title, {
@@ -53,10 +59,23 @@ export function useLiveTelemetry() {
           });
           
           if ("Notification" in window && Notification.permission === "granted") {
-            new Notification(title, {
-              body,
-              icon: "/favicon.ico"
-            });
+            new Notification(title, { body, icon: "/favicon.ico" });
+          }
+        } else {
+          // It's a normal reading or unassigned device.
+          const title = `New reading for ${deviceName}`;
+          const body = normalDetails.trim() || "Reading received";
+          
+          toast.info(title, {
+            description: body,
+            duration: 5000,
+          });
+          
+          // Optional: also push a native notification for normal readings?
+          // Usually people only want push notifications for abnormal ones to avoid spam.
+          // But to prove the notification system works, we will fire it.
+          if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(title, { body, icon: "/favicon.ico", silent: true });
           }
         }
       } catch (err) {
