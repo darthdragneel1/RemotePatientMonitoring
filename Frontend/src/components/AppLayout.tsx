@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Bell } from "lucide-react";
 
 import { useLiveTelemetry } from "@/hooks/useLiveTelemetry";
 
@@ -66,6 +66,24 @@ export function AppLayout() {
 
           {/* Desktop Right Side */}
           <div className="hidden md:flex items-center gap-4">
+            <button
+              onClick={() => {
+                if ("Notification" in window) {
+                  Notification.requestPermission().then(() => {
+                    // Force a re-render or just let the browser handle it.
+                    // The hook will check Notification.permission dynamically.
+                    window.location.reload();
+                  });
+                }
+              }}
+              className="p-2 text-muted-foreground hover:text-foreground transition-colors relative"
+              title="Enable Desktop Notifications"
+            >
+              <Bell size={20} />
+              {"Notification" in window && Notification.permission !== "granted" && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+              )}
+            </button>
             <span className="text-sm text-muted-foreground">{user?.email}</span>
             <Button variant="outline" size="sm" onClick={handleLogout}>
               Log out

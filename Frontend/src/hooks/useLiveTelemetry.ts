@@ -32,10 +32,20 @@ export function useLiveTelemetry() {
         }
         
         if (isAbnormal) {
-          toast.error(`Abnormal reading for ${device.patient ? `${device.patient.firstName} ${device.patient.lastName}` : `Device ${device.deviceId}`}`, {
-            description: abnormalDetails.trim(),
+          const title = `Abnormal reading for ${device.patient ? `${device.patient.firstName} ${device.patient.lastName}` : `Device ${device.deviceId}`}`;
+          const body = abnormalDetails.trim();
+          
+          toast.error(title, {
+            description: body,
             duration: 10000,
           });
+          
+          if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(title, {
+              body,
+              icon: "/favicon.ico"
+            });
+          }
         }
       } catch (err) {
         console.error("Error parsing live telemetry", err);
