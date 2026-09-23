@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import { TelemetryKind } from "@prisma/client";
 import { prisma } from "../db/prisma";
 
+import { telemetryEmitter } from "../services/telemetryEmitter";
+
 /**
  * MioConnect forwards `createdAt` as a unix timestamp in seconds
  * (e.g. 1623246440), consistent across telemetry/status/heartbeat payloads
@@ -62,7 +64,7 @@ function makeIngestHandler(kind: TelemetryKind) {
       });
     }
 
-    await prisma.telemetryEvent.create({
+    const newEvent = await prisma.telemetryEvent.create({
       data: {
         deviceId: device.id,
         kind,
@@ -70,6 +72,13 @@ function makeIngestHandler(kind: TelemetryKind) {
         recordedAt,
       },
     });
+
+    const deviceWithPatient = await prisma.device.findUnique({
+      where: { id: device.id },
+      include: { patient: true },
+    });
+
+    telemetryEmitter.emit("new-telemetry", { event: newEvent, device: deviceWithPatient });
 
     res.status(200).json({ success: true });
   };

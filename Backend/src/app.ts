@@ -11,6 +11,7 @@ import { devicesRouter } from "./routes/devices.routes";
 import { adminRouter } from "./routes/admin.routes";
 import { invitesRouter } from "./routes/invites.routes";
 import { auditRouter } from "./routes/audit.routes";
+import { liveRoutes } from "./routes/live.routes";
 import { requireIngestApiKey } from "./middleware/ingestAuth";
 import { ingestTelemetry, ingestStatus } from "./controllers/ingest.controller";
 import "./types/auth";
@@ -28,6 +29,7 @@ app.use("/api/devices", devicesRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/invites", invitesRouter);
 app.use("/api/audit", auditRouter);
+app.use("/api/live", liveRoutes);
 
 // MioConnect's current dashboard derives fixed sub-paths from a single base
 // URL rather than letting the forwarding path be typed freely (as the
