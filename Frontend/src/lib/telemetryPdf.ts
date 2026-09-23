@@ -42,8 +42,9 @@ export function downloadTelemetryPdf({
   doc.setTextColor(100);
   
   if (patientName) {
+    const dobFormatted = patientDob ? new Date(patientDob).toLocaleDateString("en-US", { month: '2-digit', day: '2-digit', year: 'numeric' }) : "N/A";
     doc.text(`Patient: ${patientName}`, 14, 23);
-    doc.text(`DOB: ${patientDob || "N/A"} | Phone: ${patientPhone || "N/A"}`, 14, 28);
+    doc.text(`DOB: ${dobFormatted} | Phone: ${patientPhone || "N/A"}`, 14, 28);
   }
 
   const rangeLabel =
