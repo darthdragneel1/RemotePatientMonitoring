@@ -25,15 +25,15 @@ export function AuditLogsPage() {
           <CardTitle>System Activity</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border overflow-hidden">
-            <Table>
+          <div className="rounded-md border border-border overflow-x-auto">
+            <Table className="min-w-full">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Timestamp</TableHead>
-                  <TableHead>User</TableHead>
-                  <TableHead>Action</TableHead>
-                  <TableHead>Target</TableHead>
-                  <TableHead>Details</TableHead>
+                  <TableHead className="whitespace-nowrap">Timestamp</TableHead>
+                  <TableHead className="whitespace-nowrap">User</TableHead>
+                  <TableHead className="whitespace-nowrap">Action</TableHead>
+                  <TableHead className="whitespace-nowrap">Target</TableHead>
+                  <TableHead className="whitespace-nowrap">Details</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -55,11 +55,11 @@ export function AuditLogsPage() {
                       <TableCell className="whitespace-nowrap">
                         {new Date(log.createdAt).toLocaleString()}
                       </TableCell>
-                      <TableCell>{log.userEmail || "System"}</TableCell>
-                      <TableCell>
+                      <TableCell className="whitespace-nowrap">{log.userEmail || "System"}</TableCell>
+                      <TableCell className="whitespace-nowrap">
                         <Badge variant="outline">{log.action}</Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="whitespace-nowrap">
                         {log.target} {log.targetId ? <span className="text-xs text-muted-foreground ml-1">({log.targetId.slice(-6)})</span> : null}
                       </TableCell>
                       <TableCell className="max-w-xs truncate text-xs font-mono text-muted-foreground">

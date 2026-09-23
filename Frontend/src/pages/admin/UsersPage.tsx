@@ -64,29 +64,29 @@ export function UsersPage() {
         <h1 className="text-2xl font-semibold">Users</h1>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 overflow-x-auto rounded-md border border-border">
         {isLoading ? (
           <Skeleton className="h-32 w-full" />
         ) : users?.length === 0 ? (
           <p className="text-muted-foreground">No users found.</p>
         ) : (
-          <Table>
+          <Table className="min-w-full">
             <TableHeader>
               <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Organization</TableHead>
-                <TableHead>Created</TableHead>
+                <TableHead className="whitespace-nowrap">Email</TableHead>
+                <TableHead className="whitespace-nowrap">Role</TableHead>
+                <TableHead className="whitespace-nowrap">Organization</TableHead>
+                <TableHead className="whitespace-nowrap">Created</TableHead>
                 <TableHead className="w-[100px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users?.map((u) => (
                 <TableRow key={u.id}>
-                  <TableCell className="font-medium">{u.email}</TableCell>
-                  <TableCell>{u.role}</TableCell>
-                  <TableCell>{u.org?.name ?? "—"}</TableCell>
-                  <TableCell>{new Date(u.createdAt).toLocaleDateString()}</TableCell>
+                  <TableCell className="font-medium whitespace-nowrap">{u.email}</TableCell>
+                  <TableCell className="whitespace-nowrap">{u.role}</TableCell>
+                  <TableCell className="whitespace-nowrap">{u.org?.name ?? "—"}</TableCell>
+                  <TableCell className="whitespace-nowrap">{new Date(u.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <DeleteUserDialog userId={u.id} userEmail={u.email} />
                   </TableCell>

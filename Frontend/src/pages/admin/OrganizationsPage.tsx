@@ -106,32 +106,32 @@ export function OrganizationsPage() {
         </Dialog>
       </div>
 
-      <div className="mt-6">
-        {isLoading ? (
-          <Skeleton className="h-32 w-full" />
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="w-[100px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {organizations?.map((org) => (
-                <TableRow key={org.id}>
-                  <TableCell className="font-medium">{org.name}</TableCell>
-                  <TableCell>{new Date(org.createdAt).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <DeleteOrganizationDialog orgId={org.id} orgName={org.name} />
-                  </TableCell>
+        <div className="mt-6 overflow-x-auto rounded-md border border-border">
+          {isLoading ? (
+            <Skeleton className="h-32 w-full" />
+          ) : (
+            <Table className="min-w-full">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="whitespace-nowrap">Name</TableHead>
+                  <TableHead className="whitespace-nowrap">Created</TableHead>
+                  <TableHead className="w-[100px]"></TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </div>
+              </TableHeader>
+              <TableBody>
+                {organizations?.map((org) => (
+                  <TableRow key={org.id}>
+                    <TableCell className="font-medium whitespace-nowrap">{org.name}</TableCell>
+                    <TableCell className="whitespace-nowrap">{new Date(org.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <DeleteOrganizationDialog orgId={org.id} orgName={org.name} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
     </div>
   );
 }
