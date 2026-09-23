@@ -231,12 +231,28 @@ export function getVitalAbnormalityDirection(
   return null;
 }
 
+export const DEFAULT_THRESHOLDS: VitalThresholds = {
+  sys: { orangeHigh: 130, redHigh: 140, orangeLow: 90, redLow: 80 },
+  dia: { orangeHigh: 85, redHigh: 90, orangeLow: 60, redLow: 50 },
+  pulse: { orangeHigh: 100, redHigh: 120, orangeLow: 50, redLow: 40 },
+  spo2: { orangeLow: 95, redLow: 90 },
+};
+
 export function getThresholdFor(
   thresholds: VitalThresholds | null | undefined,
   metricKey: VitalMetricKey | undefined
 ): VitalThreshold | undefined {
-  if (!thresholds || !metricKey) return undefined;
-  return thresholds[metricKey];
+  if (!metricKey) return undefined;
+  
+  const defaultThresh = DEFAULT_THRESHOLDS[metricKey];
+  const customThresh = thresholds?.[metricKey];
+  
+  if (!defaultThresh && !customThresh) return undefined;
+  
+  return {
+    ...defaultThresh,
+    ...customThresh
+  };
 }
 
 export const VITAL_STATUS_CLASS: Record<VitalStatus, string> = {
