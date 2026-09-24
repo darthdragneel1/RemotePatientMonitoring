@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
+import { AssignDeviceDialog } from "@/components/AssignDeviceDialog";
 import type { VitalThresholds, VitalMetricKey, VitalThreshold } from "@/lib/types";
 
 export function PatientDetailPage() {
