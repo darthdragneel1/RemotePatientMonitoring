@@ -2,10 +2,10 @@ import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Bell } from "lucide-react";
+import { Menu, X } from "lucide-react";
 
 import { useLiveTelemetry } from "@/hooks/useLiveTelemetry";
-import { useWebPush } from "@/hooks/useWebPush";
+import { NotificationDropdown } from "@/components/NotificationDropdown";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `text-sm font-medium transition-colors ${isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"}`;
@@ -19,7 +19,6 @@ export function AppLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useLiveTelemetry();
-  const { isSupported, isSubscribed, subscribe, unsubscribe } = useWebPush();
 
   async function handleLogout() {
     await logout();
@@ -68,24 +67,7 @@ export function AppLayout() {
 
           {/* Desktop Right Side */}
           <div className="hidden md:flex items-center gap-4">
-            {isSupported && (
-              <button
-                onClick={async () => {
-                  if (isSubscribed) {
-                    await unsubscribe();
-                  } else {
-                    await subscribe();
-                  }
-                }}
-                className={`p-2 transition-colors relative ${isSubscribed ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
-                title={isSubscribed ? "Disable Push Notifications" : "Enable Push Notifications"}
-              >
-                <Bell size={20} />
-                {!isSubscribed && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
-                )}
-              </button>
-            )}
+            <NotificationDropdown />
             <span className="text-sm text-muted-foreground">{user?.email}</span>
             <Button variant="outline" size="sm" onClick={handleLogout}>
               Log out

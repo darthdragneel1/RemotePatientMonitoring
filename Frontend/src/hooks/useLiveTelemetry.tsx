@@ -64,7 +64,7 @@ export function useLiveTelemetry() {
           const bodyText = abnormalLines.join("\n");
           
           const handleNavigate = () => {
-            navigate(`/devices/${device.deviceId}`);
+            navigate(`/devices/${device.id}`);
           };
 
           toast.error(
@@ -117,7 +117,7 @@ export function useLiveTelemetry() {
           const bodyText = normalLines.join("\n") || "Reading received";
           
           const handleNavigate = () => {
-            navigate(`/devices/${device.deviceId}`);
+            navigate(`/devices/${device.id}`);
           };
 
           toast.info(
