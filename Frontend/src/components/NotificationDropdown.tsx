@@ -37,7 +37,7 @@ export function NotificationDropdown() {
   const fetchAlerts = async () => {
     setIsLoading(true);
     try {
-      const data = await api.get<{ logs: AlertLog[] }>("/audit?action=ALERT_GENERATED&limit=10");
+      const data = await api.get<{ logs: AlertLog[] }>("/push/alerts?limit=10");
       setAlerts(data.logs || []);
     } catch (err) {
       console.error("Failed to fetch alerts", err);

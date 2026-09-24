@@ -58,3 +58,27 @@ export async function removeSubscription(req: Request, res: Response) {
     res.status(500).json({ error: "Failed to remove subscription" });
   }
 }
+
+export async function getAlerts(req: Request, res: Response) {
+  try {
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+    // Super admin can see all? Usually yes, but for now just scope to their org
+    const orgId = req.user?.orgId;
+    
+    const where: any = { action: "ALERT_GENERATED" };
+    if (orgId) {
+      where.orgId = orgId;
+    }
+
+    const logs = await prisma.auditLog.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: limit,
+    });
+
+    res.json({ logs });
+  } catch (err) {
+    console.error("Failed to fetch alerts:", err);
+    res.status(500).json({ error: "Failed to fetch alerts" });
+  }
+}
