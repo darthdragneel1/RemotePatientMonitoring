@@ -4,6 +4,29 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { getTelemetryColumns, getTelemetryData, getVitalStatus, getThresholdFor, getVitalAbnormalityDirection } from "@/lib/telemetryDisplay";
 
+function recordLiveNotification(item: {
+  title: string;
+  body: string;
+  url: string;
+  level: "error" | "info";
+}) {
+  try {
+    const KEY = "rpm_live_notifications";
+    const existingRaw = localStorage.getItem(KEY);
+    const existing = existingRaw ? JSON.parse(existingRaw) : [];
+    const newNotification = {
+      id: `live-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      createdAt: new Date().toISOString(),
+      details: item,
+    };
+    const updated = [newNotification, ...existing.slice(0, 49)];
+    localStorage.setItem(KEY, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent("rpm:new-alert"));
+  } catch (err) {
+    console.error("Failed to record live notification", err);
+  }
+}
+
 export function useLiveTelemetry() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -63,7 +86,12 @@ export function useLiveTelemetry() {
           const title = `Abnormal reading for ${deviceName}`;
           const bodyText = abnormalLines.join("\n");
           
-          window.dispatchEvent(new CustomEvent("rpm:new-alert"));
+          recordLiveNotification({
+            title,
+            body: bodyText,
+            url: `/devices/${device.id}`,
+            level: "error",
+          });
 
           const handleNavigate = () => {
             navigate(`/devices/${device.id}`);
@@ -118,6 +146,13 @@ export function useLiveTelemetry() {
           const title = `New reading for ${deviceName}`;
           const bodyText = normalLines.join("\n") || "Reading received";
           
+          recordLiveNotification({
+            title,
+            body: bodyText,
+            url: `/devices/${device.id}`,
+            level: "info",
+          });
+
           const handleNavigate = () => {
             navigate(`/devices/${device.id}`);
           };

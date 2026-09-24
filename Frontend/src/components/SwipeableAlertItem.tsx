@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { Trash2, X, AlertTriangle, ExternalLink } from "lucide-react";
+import { Trash2, X, AlertTriangle, ExternalLink, Info } from "lucide-react";
 
 export interface AlertLog {
   id: string;
@@ -177,9 +177,15 @@ export function SwipeableAlertItem({ alert, onSelect, onDismiss }: SwipeableAler
       >
         <div className="flex items-start justify-between gap-2.5">
           <div className="flex items-start gap-2.5 flex-1 min-w-0">
-            <span className="mt-0.5 inline-flex items-center justify-center p-1.5 rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 shrink-0">
-              <AlertTriangle className="w-3.5 h-3.5" />
-            </span>
+            {alert.details?.level === "info" ? (
+              <span className="mt-0.5 inline-flex items-center justify-center p-1.5 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 shrink-0">
+                <Info className="w-3.5 h-3.5" />
+              </span>
+            ) : (
+              <span className="mt-0.5 inline-flex items-center justify-center p-1.5 rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 shrink-0">
+                <AlertTriangle className="w-3.5 h-3.5" />
+              </span>
+            )}
             <div className="flex-1 min-w-0">
               <div className="font-semibold text-sm text-foreground flex items-center gap-1.5 truncate">
                 <span className="truncate">{alert.details?.title || "Alert"}</span>

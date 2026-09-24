@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "../db/prisma";
+import { getTelemetryAbnormalities } from "../services/telemetryChecker";
 
 export async function getVapidPublicKey(req: Request, res: Response) {
   res.json({ publicKey: process.env.VAPID_PUBLIC_KEY });
@@ -62,7 +63,6 @@ export async function removeSubscription(req: Request, res: Response) {
 export async function getAlerts(req: Request, res: Response) {
   try {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
-    // Super admin can see all? Usually yes, but for now just scope to their org
     const orgId = req.user?.orgId;
     
     const where: any = { action: "ALERT_GENERATED" };
@@ -70,11 +70,71 @@ export async function getAlerts(req: Request, res: Response) {
       where.orgId = orgId;
     }
 
-    const logs = await prisma.auditLog.findMany({
+    let logs = await prisma.auditLog.findMany({
       where,
       orderBy: { createdAt: "desc" },
       take: limit,
     });
+
+    // If few or no logs, backfill from recent TelemetryEvents that had abnormalities
+    if (logs.length < 5) {
+      const eventWhere: any = { kind: "TELEMETRY" };
+      if (orgId) {
+        eventWhere.device = { orgId };
+      }
+
+      const recentEvents = await prisma.telemetryEvent.findMany({
+        where: eventWhere,
+        orderBy: { recordedAt: "desc" },
+        take: 25,
+        include: { device: { include: { patient: true } } },
+      });
+
+      for (const ev of recentEvents) {
+        if (!ev.device) continue;
+        const abnormalities = getTelemetryAbnormalities(ev.payload, ev.device.patient?.vitalThresholds);
+        if (abnormalities.length > 0) {
+          const patientName = ev.device.patient
+            ? `${ev.device.patient.firstName} ${ev.device.patient.lastName}`
+            : `Device ${ev.device.deviceId}`;
+
+          const existing = await prisma.auditLog.findFirst({
+            where: {
+              action: "ALERT_GENERATED",
+              targetId: ev.device.id,
+              createdAt: {
+                gte: new Date(ev.recordedAt.getTime() - 10000),
+                lte: new Date(ev.recordedAt.getTime() + 10000),
+              },
+            },
+          });
+
+          if (!existing) {
+            await prisma.auditLog.create({
+              data: {
+                action: "ALERT_GENERATED",
+                orgId: ev.device.orgId,
+                target: "Device",
+                targetId: ev.device.id,
+                details: {
+                  title: `Abnormal reading for ${patientName}`,
+                  body: abnormalities.join("\n"),
+                  url: `/devices/${ev.device.id}`,
+                  level: "error",
+                },
+                createdAt: ev.recordedAt,
+              },
+            });
+          }
+        }
+      }
+
+      logs = await prisma.auditLog.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take: limit,
+      });
+    }
 
     res.json({ logs });
   } catch (err) {

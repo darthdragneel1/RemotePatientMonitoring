@@ -41,12 +41,53 @@ export function NotificationDropdown() {
   const fetchAlerts = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await api.get<{ logs: AlertLog[] }>("/push/alerts?limit=25");
+      // 1. Fetch server alerts (from database AuditLog)
+      let serverLogs: AlertLog[] = [];
+      try {
+        const data = await api.get<{ logs: AlertLog[] }>("/push/alerts?limit=50");
+        serverLogs = data.logs || [];
+      } catch (err) {
+        console.warn("Could not fetch server alerts, relying on local notifications", err);
+      }
+
+      // 2. Fetch locally recorded live notifications
+      let localLogs: AlertLog[] = [];
+      try {
+        const rawLocal = localStorage.getItem("rpm_live_notifications");
+        if (rawLocal) {
+          localLogs = JSON.parse(rawLocal);
+        }
+      } catch (e) {
+        console.error("Failed to read local notifications", e);
+      }
+
+      // 3. Merge, deduplicate, and filter dismissed
       const dismissedIds = getDismissedAlertIds();
-      const activeAlerts = (data.logs || []).filter(
-        (log) => !dismissedIds.includes(log.id)
+      const combined = [...localLogs, ...serverLogs];
+      const seen = new Set<string>();
+      const deduplicated: AlertLog[] = [];
+
+      for (const item of combined) {
+        if (!item || !item.id) continue;
+        if (dismissedIds.includes(item.id)) continue;
+
+        // Dedup key based on device url, title, and rough 15-second timestamp bucket
+        const timeBucket = Math.floor(new Date(item.createdAt).getTime() / 15000);
+        const dedupKey = `${item.details?.url || ""}_${item.details?.title || ""}_${timeBucket}`;
+        
+        if (seen.has(item.id) || seen.has(dedupKey)) continue;
+
+        seen.add(item.id);
+        seen.add(dedupKey);
+        deduplicated.push(item);
+      }
+
+      // Sort by createdAt descending
+      deduplicated.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
-      setAlerts(activeAlerts);
+
+      setAlerts(deduplicated);
     } catch (err) {
       console.error("Failed to fetch alerts", err);
     } finally {
@@ -103,11 +144,22 @@ export function NotificationDropdown() {
 
   const handleDismissAlert = (id: string) => {
     saveDismissedAlertId(id);
+    try {
+      const raw = localStorage.getItem("rpm_live_notifications");
+      if (raw) {
+        const local = JSON.parse(raw);
+        localStorage.setItem(
+          "rpm_live_notifications",
+          JSON.stringify(local.filter((a: AlertLog) => a.id !== id))
+        );
+      }
+    } catch {}
     setAlerts((prev) => prev.filter((a) => a.id !== id));
   };
 
   const handleClearAll = () => {
     alerts.forEach((alert) => saveDismissedAlertId(alert.id));
+    localStorage.removeItem("rpm_live_notifications");
     setAlerts([]);
   };
 
