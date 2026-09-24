@@ -26,13 +26,28 @@ export function getThresholdFor(thresholds: any, metricKey: string): VitalThresh
   return defaultThresh;
 }
 
-export function getTelemetryAbnormalities(payload: any, thresholds: any): string[] {
+export function getTelemetryAbnormalities(rawPayload: any, thresholds: any): string[] {
   const abnormalities: string[] = [];
   
+  let payload = rawPayload;
+  if (typeof payload === "string") {
+    try {
+      payload = JSON.parse(payload);
+    } catch {}
+  }
+
+  // Handle case where payload.data might be a stringified JSON
+  let innerData = payload?.data;
+  if (typeof innerData === "string") {
+    try {
+      innerData = JSON.parse(innerData);
+    } catch {}
+  }
+
   // MioConnect payloads store device data under payload.data
   const data =
-    payload && typeof payload === "object" && payload.data && typeof payload.data === "object"
-      ? { ...payload, ...payload.data }
+    innerData && typeof innerData === "object"
+      ? { ...payload, ...innerData }
       : payload || {};
 
   const checkMetric = (key: string, value: number | undefined, label: string, unit: string = "") => {

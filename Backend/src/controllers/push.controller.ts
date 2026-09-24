@@ -62,81 +62,86 @@ export async function removeSubscription(req: Request, res: Response) {
 
 export async function getAlerts(req: Request, res: Response) {
   try {
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 30));
     const orgId = req.user?.orgId;
-    
-    const where: any = { action: "ALERT_GENERATED" };
+
+    // 1. Fetch recent TelemetryEvents and identify all abnormal readings
+    const eventWhere: any = { kind: "TELEMETRY" };
     if (orgId) {
-      where.orgId = orgId;
+      eventWhere.device = { orgId };
     }
 
-    let logs = await prisma.auditLog.findMany({
-      where,
+    const recentEvents = await prisma.telemetryEvent.findMany({
+      where: eventWhere,
+      orderBy: { recordedAt: "desc" },
+      take: limit * 2,
+      include: {
+        device: {
+          include: { patient: true },
+        },
+      },
+    });
+
+    const telemetryAlerts: any[] = [];
+    for (const ev of recentEvents) {
+      if (!ev.device) continue;
+      const abnormalities = getTelemetryAbnormalities(
+        ev.payload,
+        ev.device.patient?.vitalThresholds
+      );
+      if (abnormalities.length > 0) {
+        const patientName = ev.device.patient
+          ? `${ev.device.patient.firstName} ${ev.device.patient.lastName}`
+          : `Device ${ev.device.deviceId}`;
+
+        telemetryAlerts.push({
+          id: `te-${ev.id}`,
+          targetId: ev.device.id,
+          createdAt: ev.recordedAt.toISOString(),
+          details: {
+            title: `Abnormal reading for ${patientName}`,
+            body: abnormalities.join("\n"),
+            url: `/devices/${ev.device.id}`,
+            level: "error",
+          },
+        });
+      }
+    }
+
+    // 2. Fetch AuditLog alerts
+    const auditWhere: any = { action: "ALERT_GENERATED" };
+    if (orgId) {
+      auditWhere.orgId = orgId;
+    }
+
+    const auditLogs = await prisma.auditLog.findMany({
+      where: auditWhere,
       orderBy: { createdAt: "desc" },
       take: limit,
     });
 
-    // If few or no logs, backfill from recent TelemetryEvents that had abnormalities
-    if (logs.length < 5) {
-      const eventWhere: any = { kind: "TELEMETRY" };
-      if (orgId) {
-        eventWhere.device = { orgId };
-      }
+    // 3. Merge both and deduplicate
+    const combined = [...telemetryAlerts, ...auditLogs];
+    const seen = new Set<string>();
+    const deduplicated: any[] = [];
 
-      const recentEvents = await prisma.telemetryEvent.findMany({
-        where: eventWhere,
-        orderBy: { recordedAt: "desc" },
-        take: 25,
-        include: { device: { include: { patient: true } } },
-      });
+    for (const item of combined) {
+      if (!item) continue;
+      const url = item.details?.url || item.targetId || "";
+      const timeMs = Math.floor(new Date(item.createdAt).getTime() / 20000);
+      const dedupKey = `${url}_${timeMs}`;
 
-      for (const ev of recentEvents) {
-        if (!ev.device) continue;
-        const abnormalities = getTelemetryAbnormalities(ev.payload, ev.device.patient?.vitalThresholds);
-        if (abnormalities.length > 0) {
-          const patientName = ev.device.patient
-            ? `${ev.device.patient.firstName} ${ev.device.patient.lastName}`
-            : `Device ${ev.device.deviceId}`;
-
-          const existing = await prisma.auditLog.findFirst({
-            where: {
-              action: "ALERT_GENERATED",
-              targetId: ev.device.id,
-              createdAt: {
-                gte: new Date(ev.recordedAt.getTime() - 10000),
-                lte: new Date(ev.recordedAt.getTime() + 10000),
-              },
-            },
-          });
-
-          if (!existing) {
-            await prisma.auditLog.create({
-              data: {
-                action: "ALERT_GENERATED",
-                orgId: ev.device.orgId,
-                target: "Device",
-                targetId: ev.device.id,
-                details: {
-                  title: `Abnormal reading for ${patientName}`,
-                  body: abnormalities.join("\n"),
-                  url: `/devices/${ev.device.id}`,
-                  level: "error",
-                },
-                createdAt: ev.recordedAt,
-              },
-            });
-          }
-        }
-      }
-
-      logs = await prisma.auditLog.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        take: limit,
-      });
+      if (seen.has(item.id) || seen.has(dedupKey)) continue;
+      seen.add(item.id);
+      seen.add(dedupKey);
+      deduplicated.push(item);
     }
 
-    res.json({ logs });
+    deduplicated.sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
+    res.json({ logs: deduplicated.slice(0, limit) });
   } catch (err) {
     console.error("Failed to fetch alerts:", err);
     res.status(500).json({ error: "Failed to fetch alerts" });

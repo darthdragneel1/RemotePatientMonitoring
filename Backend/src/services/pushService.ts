@@ -12,13 +12,17 @@ if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   console.warn("VAPID keys not set in environment. Web Push will not work.");
 }
 
-export async function sendWebPushToOrg(orgId: string, payload: any) {
+export async function sendWebPushToOrg(orgId: string | null | undefined, payload: any) {
   if (!process.env.VAPID_PUBLIC_KEY) return;
 
   try {
-    // Find all users in the org
+    // Find all users in the org plus super admins
+    const where: any = orgId
+      ? { OR: [{ orgId }, { role: "SUPER_ADMIN" }] }
+      : { role: "SUPER_ADMIN" };
+
     const orgUsers = await prisma.user.findMany({
-      where: { orgId },
+      where,
       include: { pushSubscriptions: true },
     });
 

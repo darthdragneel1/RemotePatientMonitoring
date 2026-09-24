@@ -90,12 +90,6 @@ function makeIngestHandler(kind: TelemetryKind) {
         const patientName = deviceWithPatient.patient 
           ? `${deviceWithPatient.patient.firstName} ${deviceWithPatient.patient.lastName}` 
           : `Device ${device.deviceId}`;
-        
-        await sendWebPushToOrg(device.orgId, {
-          title: `Abnormal reading for ${patientName}`,
-          body: abnormalities.join("\n"),
-          url: `/devices/${device.id}`
-        });
 
         await logAuditEvent("ALERT_GENERATED", {
           orgId: device.orgId,
@@ -104,8 +98,15 @@ function makeIngestHandler(kind: TelemetryKind) {
           details: {
             title: `Abnormal reading for ${patientName}`,
             body: abnormalities.join("\n"),
-            url: `/devices/${device.id}`
+            url: `/devices/${device.id}`,
+            level: "error",
           }
+        });
+
+        await sendWebPushToOrg(device.orgId, {
+          title: `Abnormal reading for ${patientName}`,
+          body: abnormalities.join("\n"),
+          url: `/devices/${device.id}`
         });
       }
     }

@@ -102,7 +102,7 @@ export function NotificationDropdown() {
     }
   }, []);
 
-  // Fetch initial alerts on mount and listen to live alert events
+  // Fetch initial alerts on mount, on tab visibility change, and listen to live alert events
   useEffect(() => {
     fetchAlerts();
 
@@ -110,9 +110,17 @@ export function NotificationDropdown() {
       fetchAlerts();
     };
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        fetchAlerts();
+      }
+    };
+
     window.addEventListener("rpm:new-alert", handleNewAlert);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
       window.removeEventListener("rpm:new-alert", handleNewAlert);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [fetchAlerts]);
 
