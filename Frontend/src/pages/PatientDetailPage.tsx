@@ -26,9 +26,9 @@ export function PatientDetailPage() {
   const [phone, setPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const [sysLimits, setSysLimits] = useState<number[]>([90, 120]);
-  const [diaLimits, setDiaLimits] = useState<number[]>([60, 80]);
-  const [pulseLimits, setPulseLimits] = useState<number[]>([60, 100]);
+  const [sysLimits, setSysLimits] = useState<number[]>([80, 90, 130, 140]);
+  const [diaLimits, setDiaLimits] = useState<number[]>([50, 60, 85, 90]);
+  const [pulseLimits, setPulseLimits] = useState<number[]>([40, 50, 100, 120]);
   const [savingMetric, setSavingMetric] = useState<string | null>(null);
 
   // Sync slider limits when patient loads or changes
@@ -37,16 +37,22 @@ export function PatientDetailPage() {
     if (patient) {
       const vt = patient.vitalThresholds;
       setSysLimits([
-        vt?.sys?.orangeLow ?? vt?.sys?.redLow ?? 90,
-        vt?.sys?.orangeHigh ?? vt?.sys?.redHigh ?? 120,
+        vt?.sys?.redLow ?? 80,
+        vt?.sys?.orangeLow ?? 90,
+        vt?.sys?.orangeHigh ?? 130,
+        vt?.sys?.redHigh ?? 140,
       ]);
       setDiaLimits([
-        vt?.dia?.orangeLow ?? vt?.dia?.redLow ?? 60,
-        vt?.dia?.orangeHigh ?? vt?.dia?.redHigh ?? 80,
+        vt?.dia?.redLow ?? 50,
+        vt?.dia?.orangeLow ?? 60,
+        vt?.dia?.orangeHigh ?? 85,
+        vt?.dia?.redHigh ?? 90,
       ]);
       setPulseLimits([
-        vt?.pulse?.orangeLow ?? vt?.pulse?.redLow ?? 60,
-        vt?.pulse?.orangeHigh ?? vt?.pulse?.redHigh ?? 100,
+        vt?.pulse?.redLow ?? 40,
+        vt?.pulse?.orangeLow ?? 50,
+        vt?.pulse?.orangeHigh ?? 100,
+        vt?.pulse?.redHigh ?? 120,
       ]);
     }
   }, [
@@ -100,35 +106,17 @@ export function PatientDetailPage() {
   async function handleCommitThresholds(metricKey: VitalMetricKey, limits: number[]) {
     if (!patient) return;
 
-    const [low, high] = limits;
+    // ensure order is strictly increasing
+    const sortedLimits = [...limits].sort((a, b) => a - b);
+    const [redLow, orangeLow, orangeHigh, redHigh] = sortedLimits;
     const currentThresholds = (patient.vitalThresholds ?? {}) as VitalThresholds;
     const existingMetric = currentThresholds[metricKey];
-    const defaultMetric = DEFAULT_THRESHOLDS[metricKey];
-
-    const defaultLowGap =
-      defaultMetric?.orangeLow !== undefined && defaultMetric?.redLow !== undefined
-        ? defaultMetric.orangeLow - defaultMetric.redLow
-        : 10;
-    const defaultHighGap =
-      defaultMetric?.orangeHigh !== undefined && defaultMetric?.redHigh !== undefined
-        ? defaultMetric.redHigh - defaultMetric.orangeHigh
-        : 10;
-
-    const redLow =
-      existingMetric?.redLow !== undefined && existingMetric.redLow < low
-        ? existingMetric.redLow
-        : Math.max(0, low - defaultLowGap);
-
-    const redHigh =
-      existingMetric?.redHigh !== undefined && existingMetric.redHigh > high
-        ? existingMetric.redHigh
-        : high + defaultHighGap;
 
     const updatedMetricThreshold: VitalThreshold = {
       ...existingMetric,
-      orangeLow: low,
-      orangeHigh: high,
       redLow,
+      orangeLow,
+      orangeHigh,
       redHigh,
     };
 
@@ -155,11 +143,11 @@ export function PatientDetailPage() {
       toast.error(err instanceof ApiError ? err.message : "Failed to update threshold");
       const vt = patient.vitalThresholds;
       if (metricKey === "sys") {
-        setSysLimits([vt?.sys?.orangeLow ?? vt?.sys?.redLow ?? 90, vt?.sys?.orangeHigh ?? vt?.sys?.redHigh ?? 120]);
+        setSysLimits([vt?.sys?.redLow ?? 80, vt?.sys?.orangeLow ?? 90, vt?.sys?.orangeHigh ?? 130, vt?.sys?.redHigh ?? 140]);
       } else if (metricKey === "dia") {
-        setDiaLimits([vt?.dia?.orangeLow ?? vt?.dia?.redLow ?? 60, vt?.dia?.orangeHigh ?? vt?.dia?.redHigh ?? 80]);
+        setDiaLimits([vt?.dia?.redLow ?? 50, vt?.dia?.orangeLow ?? 60, vt?.dia?.orangeHigh ?? 85, vt?.dia?.redHigh ?? 90]);
       } else if (metricKey === "pulse") {
-        setPulseLimits([vt?.pulse?.orangeLow ?? vt?.pulse?.redLow ?? 60, vt?.pulse?.orangeHigh ?? vt?.pulse?.redHigh ?? 100]);
+        setPulseLimits([vt?.pulse?.redLow ?? 40, vt?.pulse?.orangeLow ?? 50, vt?.pulse?.orangeHigh ?? 100, vt?.pulse?.redHigh ?? 120]);
       }
     } finally {
       setSavingMetric(null);
@@ -271,13 +259,14 @@ export function PatientDetailPage() {
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <Label>Systolic (Normal: {sysLimits[0]} - {sysLimits[1]} mmHg)</Label>
+                <Label>Systolic (Normal: {sysLimits[1]} - {sysLimits[2]} mmHg)</Label>
                 {savingMetric === "sys" && <span className="text-xs text-muted-foreground">Saving…</span>}
               </div>
               <Slider
                 min={50}
                 max={200}
                 step={1}
+                minStepsBetweenThumbs={1}
                 value={sysLimits}
                 onValueChange={(v) => setSysLimits(v as number[])}
                 onValueCommitted={(v) => handleCommitThresholds("sys", v as number[])}
@@ -285,13 +274,14 @@ export function PatientDetailPage() {
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <Label>Diastolic (Normal: {diaLimits[0]} - {diaLimits[1]} mmHg)</Label>
+                <Label>Diastolic (Normal: {diaLimits[1]} - {diaLimits[2]} mmHg)</Label>
                 {savingMetric === "dia" && <span className="text-xs text-muted-foreground">Saving…</span>}
               </div>
               <Slider
                 min={30}
                 max={130}
                 step={1}
+                minStepsBetweenThumbs={1}
                 value={diaLimits}
                 onValueChange={(v) => setDiaLimits(v as number[])}
                 onValueCommitted={(v) => handleCommitThresholds("dia", v as number[])}
@@ -299,13 +289,14 @@ export function PatientDetailPage() {
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <Label>Pulse (Normal: {pulseLimits[0]} - {pulseLimits[1]} bpm)</Label>
+                <Label>Pulse (Normal: {pulseLimits[1]} - {pulseLimits[2]} bpm)</Label>
                 {savingMetric === "pulse" && <span className="text-xs text-muted-foreground">Saving…</span>}
               </div>
               <Slider
                 min={30}
                 max={180}
                 step={1}
+                minStepsBetweenThumbs={1}
                 value={pulseLimits}
                 onValueChange={(v) => setPulseLimits(v as number[])}
                 onValueCommitted={(v) => handleCommitThresholds("pulse", v as number[])}
