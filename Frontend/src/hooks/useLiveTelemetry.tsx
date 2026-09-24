@@ -145,13 +145,6 @@ export function useLiveTelemetry() {
           // It's a normal reading or unassigned device.
           const title = `New reading for ${deviceName}`;
           const bodyText = normalLines.join("\n") || "Reading received";
-          
-          recordLiveNotification({
-            title,
-            body: bodyText,
-            url: `/devices/${device.id}`,
-            level: "info",
-          });
 
           const handleNavigate = () => {
             navigate(`/devices/${device.id}`);

@@ -50,12 +50,19 @@ export function NotificationDropdown() {
         console.warn("Could not fetch server alerts, relying on local notifications", err);
       }
 
-      // 2. Fetch locally recorded live notifications
+      // 2. Fetch locally recorded live abnormal alerts
       let localLogs: AlertLog[] = [];
       try {
         const rawLocal = localStorage.getItem("rpm_live_notifications");
         if (rawLocal) {
-          localLogs = JSON.parse(rawLocal);
+          const parsed = JSON.parse(rawLocal);
+          // Only store and display abnormal readings, never normal readings
+          localLogs = (parsed as AlertLog[]).filter(
+            (log) => log.details?.level !== "info"
+          );
+          if (localLogs.length !== parsed.length) {
+            localStorage.setItem("rpm_live_notifications", JSON.stringify(localLogs));
+          }
         }
       } catch (e) {
         console.error("Failed to read local notifications", e);
