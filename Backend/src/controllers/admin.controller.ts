@@ -120,10 +120,15 @@ export async function createInvite(req: Request, res: Response) {
     },
   });
 
-  let baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-  if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
+  let baseUrl = process.env.FRONTEND_URL;
+  if (!baseUrl) {
+    const host = req.get("host") || "localhost:5173";
+    const protocol = req.headers["x-forwarded-proto"] || req.protocol;
+    baseUrl = `${protocol}://${host}`;
+  } else if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
     baseUrl = `https://${baseUrl}`; // Assume https for production domains missing protocol
   }
+  
   const link = `${baseUrl}/accept-invite?token=${token}`;
   await sendInviteEmail(email, link);
 
