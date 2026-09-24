@@ -265,6 +265,7 @@ export function PatientDetailPage() {
                 min={50}
                 max={200}
                 step={1}
+                variant="threshold"
                 minStepsBetweenValues={1}
                 value={sysLimits}
                 onValueChange={(v) => setSysLimits(v as number[])}
@@ -280,6 +281,7 @@ export function PatientDetailPage() {
                 min={30}
                 max={130}
                 step={1}
+                variant="threshold"
                 minStepsBetweenValues={1}
                 value={diaLimits}
                 onValueChange={(v) => setDiaLimits(v as number[])}
@@ -295,6 +297,7 @@ export function PatientDetailPage() {
                 min={30}
                 max={180}
                 step={1}
+                variant="threshold"
                 minStepsBetweenValues={1}
                 value={pulseLimits}
                 onValueChange={(v) => setPulseLimits(v as number[])}

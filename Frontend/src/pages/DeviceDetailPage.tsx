@@ -359,6 +359,7 @@ export function DeviceDetailPage() {
                   min={50}
                   max={200}
                   step={1}
+                  variant="threshold"
                   minStepsBetweenValues={1}
                   value={sysLimits}
                   disabled={!device.patient}
@@ -375,6 +376,7 @@ export function DeviceDetailPage() {
                   min={30}
                   max={130}
                   step={1}
+                  variant="threshold"
                   minStepsBetweenValues={1}
                   value={diaLimits}
                   disabled={!device.patient}
@@ -391,6 +393,7 @@ export function DeviceDetailPage() {
                   min={30}
                   max={180}
                   step={1}
+                  variant="threshold"
                   minStepsBetweenValues={1}
                   value={pulseLimits}
                   disabled={!device.patient}
