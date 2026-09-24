@@ -9,8 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
-import { AssignDeviceDialog } from "@/components/AssignDeviceDialog";
-import { DEFAULT_THRESHOLDS } from "@/lib/telemetryDisplay";
 import type { VitalThresholds, VitalMetricKey, VitalThreshold } from "@/lib/types";
 
 export function PatientDetailPage() {
@@ -266,7 +264,7 @@ export function PatientDetailPage() {
                 min={50}
                 max={200}
                 step={1}
-                minStepsBetweenThumbs={1}
+                minStepsBetweenValues={1}
                 value={sysLimits}
                 onValueChange={(v) => setSysLimits(v as number[])}
                 onValueCommitted={(v) => handleCommitThresholds("sys", v as number[])}
@@ -281,7 +279,7 @@ export function PatientDetailPage() {
                 min={30}
                 max={130}
                 step={1}
-                minStepsBetweenThumbs={1}
+                minStepsBetweenValues={1}
                 value={diaLimits}
                 onValueChange={(v) => setDiaLimits(v as number[])}
                 onValueCommitted={(v) => handleCommitThresholds("dia", v as number[])}
@@ -296,7 +294,7 @@ export function PatientDetailPage() {
                 min={30}
                 max={180}
                 step={1}
-                minStepsBetweenThumbs={1}
+                minStepsBetweenValues={1}
                 value={pulseLimits}
                 onValueChange={(v) => setPulseLimits(v as number[])}
                 onValueCommitted={(v) => handleCommitThresholds("pulse", v as number[])}

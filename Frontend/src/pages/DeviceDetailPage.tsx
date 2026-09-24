@@ -23,7 +23,6 @@ import {
   getTelemetryData,
   getThresholdFor,
   getVitalStatus,
-  DEFAULT_THRESHOLDS,
   VITAL_STATUS_CLASS,
 } from "@/lib/telemetryDisplay";
 import { downloadTelemetryPdf } from "@/lib/telemetryPdf";
@@ -360,7 +359,7 @@ export function DeviceDetailPage() {
                   min={50}
                   max={200}
                   step={1}
-                  minStepsBetweenThumbs={1}
+                  minStepsBetweenValues={1}
                   value={sysLimits}
                   disabled={!device.patient}
                   onValueChange={(v) => setSysLimits(v as number[])}
@@ -376,7 +375,7 @@ export function DeviceDetailPage() {
                   min={30}
                   max={130}
                   step={1}
-                  minStepsBetweenThumbs={1}
+                  minStepsBetweenValues={1}
                   value={diaLimits}
                   disabled={!device.patient}
                   onValueChange={(v) => setDiaLimits(v as number[])}
@@ -392,7 +391,7 @@ export function DeviceDetailPage() {
                   min={30}
                   max={180}
                   step={1}
-                  minStepsBetweenThumbs={1}
+                  minStepsBetweenValues={1}
                   value={pulseLimits}
                   disabled={!device.patient}
                   onValueChange={(v) => setPulseLimits(v as number[])}
