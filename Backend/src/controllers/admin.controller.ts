@@ -120,7 +120,11 @@ export async function createInvite(req: Request, res: Response) {
     },
   });
 
-  const link = `${process.env.FRONTEND_URL}/accept-invite?token=${token}`;
+  let baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+  if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
+    baseUrl = `https://${baseUrl}`; // Assume https for production domains missing protocol
+  }
+  const link = `${baseUrl}/accept-invite?token=${token}`;
   await sendInviteEmail(email, link);
 
   logAuditEvent("CREATE_INVITE", {
