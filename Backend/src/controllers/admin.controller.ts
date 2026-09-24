@@ -122,7 +122,7 @@ export async function createInvite(req: Request, res: Response) {
 
   let baseUrl = process.env.FRONTEND_URL;
   if (!baseUrl) {
-    const host = req.get("host") || "localhost:5173";
+    const host = req.get("host") || "remotepatientmonitoring.onrender.com";
     const protocol = req.headers["x-forwarded-proto"] || req.protocol;
     baseUrl = `${protocol}://${host}`;
   } else if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
