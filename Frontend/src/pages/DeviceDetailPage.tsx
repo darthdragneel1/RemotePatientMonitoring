@@ -350,7 +350,7 @@ export function DeviceDetailPage() {
                   Assign a patient to this device to customize and synchronize alert thresholds across the system.
                 </p>
               )}
-              <div className="space-y-2">
+              <div className="pt-2 space-y-6">
                 <div className="flex justify-between text-sm">
                   <Label>Systolic (Normal: {sysLimits[1]} - {sysLimits[2]} mmHg)</Label>
                   {savingMetric === "sys" && <span className="text-xs text-muted-foreground">Saving…</span>}
@@ -367,7 +367,7 @@ export function DeviceDetailPage() {
                   onValueCommitted={(v) => handleCommitThresholds("sys", v as number[])}
                 />
               </div>
-              <div className="space-y-2">
+              <div className="pt-2 space-y-6">
                 <div className="flex justify-between text-sm">
                   <Label>Diastolic (Normal: {diaLimits[1]} - {diaLimits[2]} mmHg)</Label>
                   {savingMetric === "dia" && <span className="text-xs text-muted-foreground">Saving…</span>}
@@ -384,7 +384,7 @@ export function DeviceDetailPage() {
                   onValueCommitted={(v) => handleCommitThresholds("dia", v as number[])}
                 />
               </div>
-              <div className="space-y-2">
+              <div className="pt-2 space-y-6">
                 <div className="flex justify-between text-sm">
                   <Label>Pulse (Normal: {pulseLimits[1]} - {pulseLimits[2]} bpm)</Label>
                   {savingMetric === "pulse" && <span className="text-xs text-muted-foreground">Saving…</span>}
