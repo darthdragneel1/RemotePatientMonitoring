@@ -247,12 +247,12 @@ export function getThresholdFor(
   const defaultThresh = DEFAULT_THRESHOLDS[metricKey];
   const customThresh = thresholds?.[metricKey];
   
-  if (!defaultThresh && !customThresh) return undefined;
+  // If the patient has a custom threshold for this metric, it completely overrides the defaults.
+  if (customThresh && Object.keys(customThresh).length > 0) {
+    return customThresh;
+  }
   
-  return {
-    ...defaultThresh,
-    ...customThresh
-  };
+  return defaultThresh;
 }
 
 export const VITAL_STATUS_CLASS: Record<VitalStatus, string> = {

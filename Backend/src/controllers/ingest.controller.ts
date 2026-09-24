@@ -4,6 +4,8 @@ import { prisma } from "../db/prisma";
 
 import { telemetryEmitter } from "../services/telemetryEmitter";
 import { logAuditEvent } from "../utils/audit";
+import { getTelemetryAbnormalities } from "../services/telemetryChecker";
+import { sendWebPushToOrg } from "../services/pushService";
 
 /**
  * MioConnect forwards `createdAt` as a unix timestamp in seconds
@@ -80,6 +82,22 @@ function makeIngestHandler(kind: TelemetryKind) {
     });
 
     telemetryEmitter.emit("new-telemetry", { event: newEvent, device: deviceWithPatient });
+
+    if (kind === TelemetryKind.TELEMETRY && deviceWithPatient) {
+      const abnormalities = getTelemetryAbnormalities(req.body, deviceWithPatient.patient?.vitalThresholds);
+      
+      if (abnormalities.length > 0) {
+        const patientName = deviceWithPatient.patient 
+          ? `${deviceWithPatient.patient.firstName} ${deviceWithPatient.patient.lastName}` 
+          : `Device ${device.deviceId}`;
+        
+        await sendWebPushToOrg(device.orgId, {
+          title: `Abnormal reading for ${patientName}`,
+          body: abnormalities.join("\n"),
+          url: `/devices/${device.deviceId}`
+        });
+      }
+    }
 
     const transmissionTimeMs = Date.now() - recordedAt.getTime();
     await logAuditEvent("TELEMETRY_RECEIVED", {

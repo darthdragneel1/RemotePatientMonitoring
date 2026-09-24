@@ -41,6 +41,8 @@ model User {
 
   orgId String?
   org   Organization? @relation(fields: [orgId], references: [id])
+
+  pushSubscriptions PushSubscription[]
 }
 
 model Invite {
@@ -130,4 +132,14 @@ model AuditLog {
   org       Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
 
   @@index([orgId, createdAt])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
 }

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, Bell } from "lucide-react";
 
 import { useLiveTelemetry } from "@/hooks/useLiveTelemetry";
+import { useWebPush } from "@/hooks/useWebPush";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `text-sm font-medium transition-colors ${isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"}`;
@@ -18,6 +19,7 @@ export function AppLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useLiveTelemetry();
+  const { isSupported, isSubscribed, subscribe, unsubscribe } = useWebPush();
 
   async function handleLogout() {
     await logout();
@@ -66,24 +68,24 @@ export function AppLayout() {
 
           {/* Desktop Right Side */}
           <div className="hidden md:flex items-center gap-4">
-            <button
-              onClick={() => {
-                if ("Notification" in window) {
-                  Notification.requestPermission().then(() => {
-                    // Force a re-render or just let the browser handle it.
-                    // The hook will check Notification.permission dynamically.
-                    window.location.reload();
-                  });
-                }
-              }}
-              className="p-2 text-muted-foreground hover:text-foreground transition-colors relative"
-              title="Enable Desktop Notifications"
-            >
-              <Bell size={20} />
-              {"Notification" in window && Notification.permission !== "granted" && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
-              )}
-            </button>
+            {isSupported && (
+              <button
+                onClick={async () => {
+                  if (isSubscribed) {
+                    await unsubscribe();
+                  } else {
+                    await subscribe();
+                  }
+                }}
+                className={`p-2 transition-colors relative ${isSubscribed ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                title={isSubscribed ? "Disable Push Notifications" : "Enable Push Notifications"}
+              >
+                <Bell size={20} />
+                {!isSubscribed && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+                )}
+              </button>
+            )}
             <span className="text-sm text-muted-foreground">{user?.email}</span>
             <Button variant="outline" size="sm" onClick={handleLogout}>
               Log out

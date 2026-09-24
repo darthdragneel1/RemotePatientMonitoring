@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { VITAL_METRICS } from "@/lib/vitalMetrics";
+import { DEFAULT_THRESHOLDS } from "@/lib/telemetryDisplay";
 import type { VitalThresholds, VitalMetricKey, VitalThreshold } from "@/lib/types";
 
 interface Props {
@@ -50,6 +51,9 @@ export function VitalThresholdsEditor({ value, onChange }: Props) {
             Leave a field blank to leave that side unbounded. A reading below "Red below" or above "Red
             above" shows red; below "Orange below" or above "Orange above" shows orange; otherwise green.
           </p>
+          <div className="mb-3 rounded bg-amber-500/10 p-2 text-xs text-amber-600 dark:text-amber-400">
+            <strong>Note:</strong> Setting <em>any</em> custom bound for a metric will completely replace the defaults for that entire metric. If you want to keep the defaults for the other bounds in that row, you must explicitly enter them!
+          </div>
           <Table>
             <TableHeader>
               <TableRow>
@@ -69,7 +73,8 @@ export function VitalThresholdsEditor({ value, onChange }: Props) {
                     <TableCell key={b.key}>
                       <Input
                         type="number"
-                        className="h-8 w-24"
+                        className="h-8 w-24 placeholder:text-muted-foreground/50"
+                        placeholder={DEFAULT_THRESHOLDS[metric.key]?.[b.key]?.toString() || "None"}
                         value={value[metric.key]?.[b.key] ?? ""}
                         onChange={(e) => setBound(metric.key, b.key, e.target.value)}
                       />

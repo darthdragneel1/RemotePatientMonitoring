@@ -1,10 +1,12 @@
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { getTelemetryColumns, getTelemetryData, getVitalStatus, getThresholdFor, getVitalAbnormalityDirection } from "@/lib/telemetryDisplay";
 
 export function useLiveTelemetry() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const url = `${import.meta.env.VITE_API_URL || ""}/api/live/telemetry`;
@@ -61,8 +63,12 @@ export function useLiveTelemetry() {
           const title = `Abnormal reading for ${deviceName}`;
           const bodyText = abnormalLines.join("\n");
           
+          const handleNavigate = () => {
+            navigate(`/devices/${device.deviceId}`);
+          };
+
           toast.error(
-            <div className="flex flex-col gap-2 w-full">
+            <div className="flex flex-col gap-2 w-full cursor-pointer" onClick={handleNavigate}>
               <div className="font-bold text-base text-red-900">{title}</div>
               {device.patient && <div className="text-sm font-semibold text-red-800">DOB: {dobStr}</div>}
               <div className="text-sm text-red-800 whitespace-pre-wrap">{bodyText}</div>
@@ -98,15 +104,24 @@ export function useLiveTelemetry() {
           }
           
           if ("Notification" in window && Notification.permission === "granted") {
-            new Notification(title, { body: bodyText, icon: "/favicon.ico" });
+            const n = new Notification(title, { body: bodyText, icon: "/favicon.ico" });
+            n.onclick = () => {
+              window.focus();
+              handleNavigate();
+              n.close();
+            };
           }
         } else {
           // It's a normal reading or unassigned device.
           const title = `New reading for ${deviceName}`;
           const bodyText = normalLines.join("\n") || "Reading received";
           
+          const handleNavigate = () => {
+            navigate(`/devices/${device.deviceId}`);
+          };
+
           toast.info(
-            <div className="flex flex-col gap-2 w-full">
+            <div className="flex flex-col gap-2 w-full cursor-pointer" onClick={handleNavigate}>
               <div className="font-bold text-base text-blue-900">{title}</div>
               {device.patient && <div className="text-sm font-semibold text-blue-800">DOB: {dobStr}</div>}
               <div className="text-sm text-blue-800 whitespace-pre-wrap">{bodyText}</div>
@@ -118,7 +133,12 @@ export function useLiveTelemetry() {
           );
           
           if ("Notification" in window && Notification.permission === "granted") {
-            new Notification(title, { body: bodyText, icon: "/favicon.ico", silent: true });
+            const n = new Notification(title, { body: bodyText, icon: "/favicon.ico", silent: true });
+            n.onclick = () => {
+              window.focus();
+              handleNavigate();
+              n.close();
+            };
           }
         }
       } catch (err) {
