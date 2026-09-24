@@ -94,7 +94,18 @@ function makeIngestHandler(kind: TelemetryKind) {
         await sendWebPushToOrg(device.orgId, {
           title: `Abnormal reading for ${patientName}`,
           body: abnormalities.join("\n"),
-          url: `/devices/${device.deviceId}`
+          url: `/devices/${device.id}`
+        });
+
+        await logAuditEvent("ALERT_GENERATED", {
+          orgId: device.orgId,
+          target: "Device",
+          targetId: device.id,
+          details: {
+            title: `Abnormal reading for ${patientName}`,
+            body: abnormalities.join("\n"),
+            url: `/devices/${device.id}`
+          }
         });
       }
     }

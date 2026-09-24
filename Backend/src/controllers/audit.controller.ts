@@ -6,7 +6,12 @@ export async function listAuditLogs(req: Request, res: Response) {
   const page = Math.max(1, parseInt(req.query.page as string) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
 
-  const where = { ...orgScope(req) };
+  const action = req.query.action as string | undefined;
+
+  const where: any = { ...orgScope(req) };
+  if (action) {
+    where.action = action;
+  }
 
   const [logs, total] = await prisma.$transaction([
     prisma.auditLog.findMany({
