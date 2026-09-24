@@ -41,13 +41,22 @@ export function useCreatePatient() {
   });
 }
 
-export function useUpdatePatient(id: string) {
+export function useUpdatePatient(id?: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: Partial<PatientInput>) => api.patch<{ patient: Patient }>(`/patients/${id}`, data),
-    onSuccess: () => {
+    mutationFn: (data: Partial<PatientInput> & { patientId?: string }) => {
+      const targetId = data.patientId || id;
+      if (!targetId) throw new Error("Patient ID is required");
+      const { patientId: _, ...rest } = data;
+      return api.patch<{ patient: Patient }>(`/patients/${targetId}`, rest);
+    },
+    onSuccess: (_, variables) => {
+      const targetId = variables?.patientId || id;
       queryClient.invalidateQueries({ queryKey: ["patients"] });
-      queryClient.invalidateQueries({ queryKey: ["patients", id] });
+      if (targetId) {
+        queryClient.invalidateQueries({ queryKey: ["patients", targetId] });
+      }
+      queryClient.invalidateQueries({ queryKey: ["devices"] });
     },
   });
 }

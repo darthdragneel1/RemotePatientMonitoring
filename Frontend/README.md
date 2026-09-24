@@ -56,7 +56,7 @@ src/
 /accept-invite?token=...    — public: preview email/org for the token, set a password, auto-logs in
 /                            — protected, redirects to /login if unauthenticated
   /devices                   — device list (org-scoped server-side), add-device dialog
-  /devices/:id                 — device detail: info, patient reassignment, telemetry history
+  /devices/:id                 — device detail: info, patient reassignment, interactive display threshold sliders (unified across patient record, live alerting, and table styling), telemetry history
   /patients                     — patient list, add-patient dialog
   /patients/:id                   — patient detail: editable info, linked devices
   /admin/organizations               — SUPER_ADMIN only: org list + create

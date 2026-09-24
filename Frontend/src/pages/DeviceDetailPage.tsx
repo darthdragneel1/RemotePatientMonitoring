@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useDevice, useDeviceTelemetry, useUpdateDevice, fetchDeviceTelemetryExport, useUpdateTelemetryCommunication } from "@/hooks/useDevices";
-import { usePatients } from "@/hooks/usePatients";
+import { usePatients, useUpdatePatient } from "@/hooks/usePatients";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Slider } from "@/components/ui/slider";
@@ -22,12 +23,14 @@ import {
   getTelemetryData,
   getThresholdFor,
   getVitalStatus,
+  DEFAULT_THRESHOLDS,
   VITAL_STATUS_CLASS,
 } from "@/lib/telemetryDisplay";
 import { downloadTelemetryPdf } from "@/lib/telemetryPdf";
 import { ApiError } from "@/lib/api";
 import { CommunicationDialog } from "@/components/CommunicationDialog";
 import { FileEdit } from "lucide-react";
+import type { VitalThresholds, VitalMetricKey, VitalThreshold } from "@/lib/types";
 
 const UNASSIGNED = "__unassigned__";
 
@@ -41,9 +44,11 @@ function toEndOfDayIso(date: string): string {
 
 export function DeviceDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const queryClient = useQueryClient();
   const { data: device, isLoading } = useDevice(id);
   const { data: patients } = usePatients();
   const updateDevice = useUpdateDevice(id!);
+  const updatePatient = useUpdatePatient();
 
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -57,10 +62,134 @@ export function DeviceDetailPage() {
 
   const updateCommunication = useUpdateTelemetryCommunication(id!);
 
-  // AHA and ACC standard normal ranges for BP and pulse
-  const [sysLimits, setSysLimits] = useState([90, 120]);
-  const [diaLimits, setDiaLimits] = useState([60, 80]);
-  const [pulseLimits, setPulseLimits] = useState([60, 100]);
+  const patientThresholds = device?.patient?.vitalThresholds;
+
+  const [sysLimits, setSysLimits] = useState<number[]>([
+    patientThresholds?.sys?.orangeLow ?? patientThresholds?.sys?.redLow ?? 90,
+    patientThresholds?.sys?.orangeHigh ?? patientThresholds?.sys?.redHigh ?? 120,
+  ]);
+  const [diaLimits, setDiaLimits] = useState<number[]>([
+    patientThresholds?.dia?.orangeLow ?? patientThresholds?.dia?.redLow ?? 60,
+    patientThresholds?.dia?.orangeHigh ?? patientThresholds?.dia?.redHigh ?? 80,
+  ]);
+  const [pulseLimits, setPulseLimits] = useState<number[]>([
+    patientThresholds?.pulse?.orangeLow ?? patientThresholds?.pulse?.redLow ?? 60,
+    patientThresholds?.pulse?.orangeHigh ?? patientThresholds?.pulse?.redHigh ?? 100,
+  ]);
+  const [savingMetric, setSavingMetric] = useState<string | null>(null);
+
+  // Sync slider limits when patient or patient threshold loads / changes from server
+  useEffect(() => {
+    if (savingMetric) return;
+    if (device?.patient) {
+      const vt = device.patient.vitalThresholds;
+      setSysLimits([
+        vt?.sys?.orangeLow ?? vt?.sys?.redLow ?? 90,
+        vt?.sys?.orangeHigh ?? vt?.sys?.redHigh ?? 120,
+      ]);
+      setDiaLimits([
+        vt?.dia?.orangeLow ?? vt?.dia?.redLow ?? 60,
+        vt?.dia?.orangeHigh ?? vt?.dia?.redHigh ?? 80,
+      ]);
+      setPulseLimits([
+        vt?.pulse?.orangeLow ?? vt?.pulse?.redLow ?? 60,
+        vt?.pulse?.orangeHigh ?? vt?.pulse?.redHigh ?? 100,
+      ]);
+    } else {
+      setSysLimits([90, 120]);
+      setDiaLimits([60, 80]);
+      setPulseLimits([60, 100]);
+    }
+  }, [
+    device?.patient?.id,
+    device?.patient?.vitalThresholds?.sys?.orangeLow,
+    device?.patient?.vitalThresholds?.sys?.orangeHigh,
+    device?.patient?.vitalThresholds?.sys?.redLow,
+    device?.patient?.vitalThresholds?.sys?.redHigh,
+    device?.patient?.vitalThresholds?.dia?.orangeLow,
+    device?.patient?.vitalThresholds?.dia?.orangeHigh,
+    device?.patient?.vitalThresholds?.dia?.redLow,
+    device?.patient?.vitalThresholds?.dia?.redHigh,
+    device?.patient?.vitalThresholds?.pulse?.orangeLow,
+    device?.patient?.vitalThresholds?.pulse?.orangeHigh,
+    device?.patient?.vitalThresholds?.pulse?.redLow,
+    device?.patient?.vitalThresholds?.pulse?.redHigh,
+    savingMetric,
+  ]);
+
+  async function handleCommitThresholds(metricKey: VitalMetricKey, limits: number[]) {
+    if (!device?.patient?.id) {
+      toast.error("No patient assigned to this device.");
+      return;
+    }
+
+    const [low, high] = limits;
+    const currentThresholds = (device.patient.vitalThresholds ?? {}) as VitalThresholds;
+    const existingMetric = currentThresholds[metricKey];
+    const defaultMetric = DEFAULT_THRESHOLDS[metricKey];
+
+    const defaultLowGap =
+      defaultMetric?.orangeLow !== undefined && defaultMetric?.redLow !== undefined
+        ? defaultMetric.orangeLow - defaultMetric.redLow
+        : 10;
+    const defaultHighGap =
+      defaultMetric?.orangeHigh !== undefined && defaultMetric?.redHigh !== undefined
+        ? defaultMetric.redHigh - defaultMetric.orangeHigh
+        : 10;
+
+    const redLow =
+      existingMetric?.redLow !== undefined && existingMetric.redLow < low
+        ? existingMetric.redLow
+        : Math.max(0, low - defaultLowGap);
+
+    const redHigh =
+      existingMetric?.redHigh !== undefined && existingMetric.redHigh > high
+        ? existingMetric.redHigh
+        : high + defaultHighGap;
+
+    const updatedMetricThreshold: VitalThreshold = {
+      ...existingMetric,
+      orangeLow: low,
+      orangeHigh: high,
+      redLow,
+      redHigh,
+    };
+
+    const nextThresholds: VitalThresholds = {
+      ...currentThresholds,
+      [metricKey]: updatedMetricThreshold,
+    };
+
+    const metricNames: Record<string, string> = {
+      sys: "Systolic",
+      dia: "Diastolic",
+      pulse: "Pulse",
+    };
+    const metricLabel = metricNames[metricKey] || metricKey;
+
+    setSavingMetric(metricKey);
+    try {
+      await updatePatient.mutateAsync({
+        patientId: device.patient.id,
+        vitalThresholds: nextThresholds,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["devices", id] });
+      await queryClient.invalidateQueries({ queryKey: ["devices"] });
+      toast.success(`Updated ${metricLabel} thresholds for ${device.patient.firstName}`);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Failed to update threshold");
+      const vt = device.patient.vitalThresholds;
+      if (metricKey === "sys") {
+        setSysLimits([vt?.sys?.orangeLow ?? vt?.sys?.redLow ?? 90, vt?.sys?.orangeHigh ?? vt?.sys?.redHigh ?? 120]);
+      } else if (metricKey === "dia") {
+        setDiaLimits([vt?.dia?.orangeLow ?? vt?.dia?.redLow ?? 60, vt?.dia?.orangeHigh ?? vt?.dia?.redHigh ?? 80]);
+      } else if (metricKey === "pulse") {
+        setPulseLimits([vt?.pulse?.orangeLow ?? vt?.pulse?.redLow ?? 60, vt?.pulse?.orangeHigh ?? vt?.pulse?.redHigh ?? 100]);
+      }
+    } finally {
+      setSavingMetric(null);
+    }
+  }
 
   const from = fromDate ? toStartOfDayIso(fromDate) : undefined;
   const to = toDate ? toEndOfDayIso(toDate) : undefined;
@@ -129,7 +258,6 @@ export function DeviceDetailPage() {
     return <p className="text-muted-foreground">Device not found.</p>;
   }
 
-  const patientThresholds = device.patient?.vitalThresholds;
   const events = telemetryPage?.events ?? [];
   const firstEventPayload = events.length > 0 ? events[0].payload : undefined;
   const telemetryColumns = getTelemetryColumns(device.modelNumber, firstEventPayload);
@@ -208,27 +336,71 @@ export function DeviceDetailPage() {
 
         {hasBPColumns && (
           <Card>
-            <CardHeader>
-              <CardTitle>Display Thresholds (AHA/ACC)</CardTitle>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Display Thresholds</CardTitle>
+                  <CardDescription className="text-xs">
+                    {device.patient
+                      ? `Alert thresholds for ${device.patient.firstName} ${device.patient.lastName}`
+                      : "Standard thresholds (Unassigned device)"}
+                  </CardDescription>
+                </div>
+                {savingMetric && (
+                  <span className="text-xs text-muted-foreground animate-pulse">Saving…</span>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
+              {!device.patient && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 p-2 rounded">
+                  Assign a patient to this device to customize and synchronize alert thresholds across the system.
+                </p>
+              )}
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <Label>Systolic (Normal: {sysLimits[0]} - {sysLimits[1]})</Label>
+                  <Label>Systolic (Normal: {sysLimits[0]} - {sysLimits[1]} mmHg)</Label>
+                  {savingMetric === "sys" && <span className="text-xs text-muted-foreground">Saving…</span>}
                 </div>
-                <Slider min={50} max={200} step={1} value={sysLimits} onValueChange={(v) => setSysLimits(v as number[])} />
+                <Slider
+                  min={50}
+                  max={200}
+                  step={1}
+                  value={sysLimits}
+                  disabled={!device.patient}
+                  onValueChange={(v) => setSysLimits(v as number[])}
+                  onValueCommitted={(v) => handleCommitThresholds("sys", v as number[])}
+                />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <Label>Diastolic (Normal: {diaLimits[0]} - {diaLimits[1]})</Label>
+                  <Label>Diastolic (Normal: {diaLimits[0]} - {diaLimits[1]} mmHg)</Label>
+                  {savingMetric === "dia" && <span className="text-xs text-muted-foreground">Saving…</span>}
                 </div>
-                <Slider min={30} max={130} step={1} value={diaLimits} onValueChange={(v) => setDiaLimits(v as number[])} />
+                <Slider
+                  min={30}
+                  max={130}
+                  step={1}
+                  value={diaLimits}
+                  disabled={!device.patient}
+                  onValueChange={(v) => setDiaLimits(v as number[])}
+                  onValueCommitted={(v) => handleCommitThresholds("dia", v as number[])}
+                />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <Label>Pulse (Normal: {pulseLimits[0]} - {pulseLimits[1]})</Label>
+                  <Label>Pulse (Normal: {pulseLimits[0]} - {pulseLimits[1]} bpm)</Label>
+                  {savingMetric === "pulse" && <span className="text-xs text-muted-foreground">Saving…</span>}
                 </div>
-                <Slider min={30} max={180} step={1} value={pulseLimits} onValueChange={(v) => setPulseLimits(v as number[])} />
+                <Slider
+                  min={30}
+                  max={180}
+                  step={1}
+                  value={pulseLimits}
+                  disabled={!device.patient}
+                  onValueChange={(v) => setPulseLimits(v as number[])}
+                  onValueCommitted={(v) => handleCommitThresholds("pulse", v as number[])}
+                />
               </div>
             </CardContent>
           </Card>
@@ -303,38 +475,41 @@ export function DeviceDetailPage() {
                           )}
                           {telemetryColumns.map((column) => {
                             const value = column.getNumeric?.(data);
-                            let statusClass: string | undefined = undefined;
+                            let activeThreshold: VitalThreshold | undefined;
 
                             if (column.metricKey === "sys") {
-                              statusClass =
-                                value === undefined
-                                  ? undefined
-                                  : value < sysLimits[0] || value > sysLimits[1]
-                                    ? "text-red-600 font-semibold"
-                                    : "text-foreground font-normal";
+                              const base = getThresholdFor(patientThresholds, "sys");
+                              activeThreshold = {
+                                ...base,
+                                orangeLow: sysLimits[0],
+                                orangeHigh: sysLimits[1],
+                                redLow: base?.redLow !== undefined && base.redLow < sysLimits[0] ? base.redLow : Math.max(0, sysLimits[0] - 10),
+                                redHigh: base?.redHigh !== undefined && base.redHigh > sysLimits[1] ? base.redHigh : sysLimits[1] + 10,
+                              };
                             } else if (column.metricKey === "dia") {
-                              statusClass =
-                                value === undefined
-                                  ? undefined
-                                  : value < diaLimits[0] || value > diaLimits[1]
-                                    ? "text-red-600 font-semibold"
-                                    : "text-foreground font-normal";
+                              const base = getThresholdFor(patientThresholds, "dia");
+                              activeThreshold = {
+                                ...base,
+                                orangeLow: diaLimits[0],
+                                orangeHigh: diaLimits[1],
+                                redLow: base?.redLow !== undefined && base.redLow < diaLimits[0] ? base.redLow : Math.max(0, diaLimits[0] - 10),
+                                redHigh: base?.redHigh !== undefined && base.redHigh > diaLimits[1] ? base.redHigh : diaLimits[1] + 10,
+                              };
                             } else if (column.metricKey === "pulse") {
-                              statusClass =
-                                value === undefined
-                                  ? undefined
-                                  : value < pulseLimits[0] || value > pulseLimits[1]
-                                    ? "text-red-600 font-semibold"
-                                    : "text-foreground font-normal";
-                            } else {
-                              const status = column.metricKey
-                                ? getVitalStatus(
-                                    getThresholdFor(patientThresholds, column.metricKey),
-                                    value
-                                  )
-                                : null;
-                              statusClass = status ? VITAL_STATUS_CLASS[status] : undefined;
+                              const base = getThresholdFor(patientThresholds, "pulse");
+                              activeThreshold = {
+                                ...base,
+                                orangeLow: pulseLimits[0],
+                                orangeHigh: pulseLimits[1],
+                                redLow: base?.redLow !== undefined && base.redLow < pulseLimits[0] ? base.redLow : Math.max(0, pulseLimits[0] - 10),
+                                redHigh: base?.redHigh !== undefined && base.redHigh > pulseLimits[1] ? base.redHigh : pulseLimits[1] + 10,
+                              };
+                            } else if (column.metricKey) {
+                              activeThreshold = getThresholdFor(patientThresholds, column.metricKey);
                             }
+
+                            const status = column.metricKey ? getVitalStatus(activeThreshold, value) : null;
+                            const statusClass = status ? VITAL_STATUS_CLASS[status] : undefined;
 
                             return (
                               <TableCell key={column.label} className={`${statusClass ?? ""} whitespace-nowrap`}>
