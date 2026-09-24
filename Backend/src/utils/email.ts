@@ -24,12 +24,19 @@ export async function sendInviteEmail(to: string, link: string): Promise<void> {
       to,
       subject: "You've been invited to Remote Patient Monitoring",
       html: `
-        <h2>Welcome to Remote Patient Monitoring!</h2>
-        <p>You have been invited to join the platform.</p>
-        <p>Click the link below to accept your invitation and create your account:</p>
-        <p><a href="${link}">${link}</a></p>
-        <br />
-        <p>If you did not expect this invitation, you can safely ignore this email.</p>
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; color: #020817; padding: 40px 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
+          <h2 style="color: #0f172a; margin-top: 0; font-size: 24px;">Welcome to Remote Patient Monitoring!</h2>
+          <p style="font-size: 16px; line-height: 1.5; color: #334155;">You have been invited to join the platform.</p>
+          <p style="font-size: 16px; line-height: 1.5; color: #334155;">Click the button below to accept your invitation and create your account:</p>
+          
+          <div style="margin: 32px 0;">
+            <a href="${link}" style="background-color: #3b82f6; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 500; display: inline-block;">Accept Invitation</a>
+          </div>
+          
+          <p style="font-size: 14px; color: #64748b; line-height: 1.5;">If the button doesn't work, you can copy and paste this link into your browser:<br/><a href="${link}" style="color: #3b82f6;">${link}</a></p>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+          <p style="font-size: 12px; color: #94a3b8; margin-bottom: 0;">If you did not expect this invitation, you can safely ignore this email.</p>
+        </div>
       `,
     });
 
