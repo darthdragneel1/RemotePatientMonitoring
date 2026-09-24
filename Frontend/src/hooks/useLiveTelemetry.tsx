@@ -63,6 +63,8 @@ export function useLiveTelemetry() {
           const title = `Abnormal reading for ${deviceName}`;
           const bodyText = abnormalLines.join("\n");
           
+          window.dispatchEvent(new CustomEvent("rpm:new-alert"));
+
           const handleNavigate = () => {
             navigate(`/devices/${device.id}`);
           };

@@ -10,7 +10,7 @@ Dashboard for the multi-tenant device telemetry app. Organizations log in and se
 - **Styling**: Tailwind CSS v4 + shadcn/ui (style: `base-nova`, base color: neutral) — built on **Base UI** (`@base-ui/react`), not Radix; see [Base UI gotchas](#base-ui-gotchas) below
 - **Auth**: session cookie (httpOnly, set by the backend) — no client-side token storage
 - **Forms**: plain `useState` per form (no react-hook-form) — forms here are short enough not to need it
-- **Notifications**: `sonner` toasts on mutation success
+- **Notifications**: `sonner` toasts for mutations, Web Push (VAPID + Service Worker), real-time SSE alerts, and an interactive notification dropdown with touch/mouse drag-to-dismiss gestures.
 
 ## Project Structure
 
@@ -21,10 +21,14 @@ src/
   context/
     AuthContext.tsx        # current user state, login/logout, backed by GET /auth/me
   components/
-    AppLayout.tsx           # nav bar (role-aware links) + page outlet
+    AppLayout.tsx           # nav bar (role-aware links) + page outlet + notification bell
+    NotificationDropdown.tsx # header notification dropdown with badge count & clear all
+    SwipeableAlertItem.tsx   # swipe/drag-to-dismiss notification card with direct navigation
     ProtectedRoute.tsx        # redirects to /login if unauthenticated; RequireRole for admin-only routes
     ui/                        # shadcn components (button, input, label, card, table, badge, dialog, select, ...)
   hooks/
+    useWebPush.ts              # Web Push subscription management (subscribe/unsubscribe/status)
+    useLiveTelemetry.tsx       # SSE live telemetry stream + abnormal vital alerts
     usePatients.ts             # list/get/create/update/delete
     useDevices.ts               # list/get/create/update/delete + telemetry history/latest
     useAdmin.ts                   # organizations + invites (admin-only)

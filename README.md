@@ -9,6 +9,7 @@ This repository is a **unified monorepo** containing both the Frontend (React/Vi
 - **Multi-Tenant Architecture**: Strict data isolation. Users only see patients, devices, and telemetry associated with their own organization.
 - **Super Admin Capabilities**: Global overview, organization creation, and user invite management.
 - **Device Telemetry Ingestion**: A robust set of webhooks designed to receive payload data (telemetry, status, heartbeat) forwarded from **MioConnect** (Lifesense/Transtek devices like BP monitors, scales, pulse oximeters, etc.).
+- **Real-Time Alerting & Push Notifications**: Web Push notifications (VAPID + Service Worker) for abnormal vitals, live Server-Sent Events (SSE), and an interactive in-app notification center with swipe/drag-to-dismiss gestures.
 - **Modern Tech Stack**: 
   - **Frontend**: React 19, Vite, TypeScript, Tailwind CSS v4, Base UI, TanStack Query.
   - **Backend**: Node.js, Express 5, Prisma ORM, PostgreSQL.
