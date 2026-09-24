@@ -6,6 +6,7 @@ import { telemetryEmitter } from "../services/telemetryEmitter";
 import { logAuditEvent } from "../utils/audit";
 import { getTelemetryAbnormalities } from "../services/telemetryChecker";
 import { sendWebPushToOrg } from "../services/pushService";
+import { sendAlertEmail } from "../utils/email";
 
 /**
  * MioConnect forwards `createdAt` as a unix timestamp in seconds
@@ -108,6 +109,38 @@ function makeIngestHandler(kind: TelemetryKind) {
           body: abnormalities.join("\n"),
           url: `/devices/${device.id}`
         });
+
+        // Send email alerts
+        const orgUsers = await prisma.user.findMany({
+          where: { orgId: device.orgId },
+          select: { email: true }
+        });
+        
+        const emails = new Set(orgUsers.map(u => u.email));
+        if (process.env.GMAIL_USER) {
+          emails.add(process.env.GMAIL_USER);
+        }
+
+        if (emails.size > 0) {
+          const subject = `⚠️ ALERT: Abnormal reading for ${patientName}`;
+          const html = `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #dc2626;">Abnormal Reading Alert</h2>
+              <p>An abnormal reading was just received.</p>
+              <table style="width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px;">
+                <tr><td style="padding: 4px 0;"><strong>Patient:</strong></td><td>${patientName}</td></tr>
+                <tr><td style="padding: 4px 0;"><strong>Device ID:</strong></td><td>${device.deviceId}</td></tr>
+              </table>
+              <h3 style="margin-bottom: 8px;">Abnormalities Detected:</h3>
+              <ul style="background-color: #fee2e2; border: 1px solid #f87171; padding: 16px 16px 16px 32px; border-radius: 6px;">
+                ${abnormalities.map(a => `<li style="color: #991b1b; margin-bottom: 4px;">${a}</li>`).join("\n")}
+              </ul>
+              <br/>
+              <p>Please log in to the Remote Patient Monitoring dashboard to review this reading.</p>
+            </div>
+          `;
+          await sendAlertEmail(Array.from(emails), subject, html);
+        }
       }
     }
 

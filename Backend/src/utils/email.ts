@@ -38,3 +38,34 @@ export async function sendInviteEmail(to: string, link: string): Promise<void> {
     console.error(`[email:error] Failed to send invite to ${to}`, error);
   }
 }
+
+export async function sendAlertEmail(to: string[], subject: string, html: string): Promise<void> {
+  const GMAIL_USER = process.env.GMAIL_USER;
+  const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
+
+  if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
+    console.log(`[email:stub] Alert to ${to.join(", ")}: ${subject}`);
+    return;
+  }
+
+  try {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: GMAIL_USER,
+        pass: GMAIL_APP_PASSWORD,
+      },
+    });
+
+    const info = await transporter.sendMail({
+      from: `"Remote Patient Monitoring" <${GMAIL_USER}>`,
+      bcc: to, // use bcc to hide recipients from each other
+      subject,
+      html,
+    });
+
+    console.log(`[email:sent] Alert successfully sent to ${to.length} recipients`, info.messageId);
+  } catch (error) {
+    console.error(`[email:error] Failed to send alert email`, error);
+  }
+}
