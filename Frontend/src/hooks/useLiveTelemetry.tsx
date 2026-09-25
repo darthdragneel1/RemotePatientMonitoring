@@ -56,6 +56,7 @@ export function useLiveTelemetry() {
         const thresholds = device.patient?.vitalThresholds;
         
         let isAbnormal = false;
+        let maxSeverity: "green" | "orange" | "red" = "green";
         
         // Use an array to store lines for better formatting
         const abnormalLines: string[] = [];
@@ -69,6 +70,8 @@ export function useLiveTelemetry() {
             
             if (status === "red" || status === "orange") {
               isAbnormal = true;
+              if (status === "red") maxSeverity = "red";
+              if (status === "orange" && maxSeverity !== "red") maxSeverity = "orange";
               const direction = getVitalAbnormalityDirection(threshold, value);
               const dirText = direction ? ` (${direction})` : "";
               abnormalLines.push(`• ${col.label}: ${col.get(rowData)}${dirText}`);
@@ -109,30 +112,6 @@ export function useLiveTelemetry() {
             }
           );
           
-          try {
-            const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-            if (AudioCtx) {
-              const ctx = new AudioCtx();
-              const osc = ctx.createOscillator();
-              const gain = ctx.createGain();
-              osc.connect(gain);
-              gain.connect(ctx.destination);
-              
-              // Double-beep (High Pitch)
-              osc.type = "sine";
-              osc.frequency.setValueAtTime(880, ctx.currentTime);
-              osc.frequency.setValueAtTime(1046.50, ctx.currentTime + 0.15);
-              
-              gain.gain.setValueAtTime(0.5, ctx.currentTime);
-              gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
-              
-              osc.start(ctx.currentTime);
-              osc.stop(ctx.currentTime + 0.5);
-            }
-          } catch (e) {
-            console.error("Audio blocked:", e);
-          }
-          
           if ("Notification" in window && Notification.permission === "granted") {
             const n = new Notification(title, { body: bodyText, icon: "/favicon.ico" });
             n.onclick = () => {
@@ -170,6 +149,77 @@ export function useLiveTelemetry() {
               n.close();
             };
           }
+        }
+
+        // Play sounds depending on the max severity level
+        try {
+          const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+          if (AudioCtx) {
+            const ctx = new AudioCtx();
+            if (maxSeverity === "red") {
+              // Prominent 5-beep medical-style alarm
+              const playPulse = (startTime: number) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.type = "triangle"; // more harmonics than sine, less harsh than sawtooth
+                osc.frequency.setValueAtTime(900, startTime);
+                osc.frequency.setValueAtTime(1200, startTime + 0.08); // slight upward inflection
+                
+                gain.gain.setValueAtTime(0, startTime);
+                gain.gain.linearRampToValueAtTime(0.8, startTime + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.2);
+                
+                osc.start(startTime);
+                osc.stop(startTime + 0.25);
+              };
+              // 3 quick beeps
+              playPulse(ctx.currentTime);
+              playPulse(ctx.currentTime + 0.15);
+              playPulse(ctx.currentTime + 0.30);
+            } else if (maxSeverity === "orange") {
+              // Caution Beeps (what it was before)
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              
+              osc.type = "sine";
+              osc.frequency.setValueAtTime(880, ctx.currentTime);
+              osc.frequency.setValueAtTime(1046.50, ctx.currentTime + 0.15);
+              
+              gain.gain.setValueAtTime(0.5, ctx.currentTime);
+              gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+              
+              osc.start(ctx.currentTime);
+              osc.stop(ctx.currentTime + 0.5);
+            } else {
+              // Green - Very subtle soft tap
+              const playTap = (startTime: number) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(400, startTime);
+                
+                // Extremely soft and quick
+                gain.gain.setValueAtTime(0, startTime);
+                gain.gain.linearRampToValueAtTime(0.06, startTime + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.1);
+                
+                osc.start(startTime);
+                osc.stop(startTime + 0.15);
+              };
+              
+              playTap(ctx.currentTime);
+            }
+          }
+        } catch (e) {
+          console.error("Audio blocked:", e);
         }
       } catch (err) {
         console.error("Error parsing live telemetry", err);

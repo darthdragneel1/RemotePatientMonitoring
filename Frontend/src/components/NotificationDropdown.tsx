@@ -230,6 +230,21 @@ export function NotificationDropdown() {
                 variant="ghost"
                 size="sm"
                 className="h-7 px-2 text-xs"
+                onClick={() => {
+                  if ("Notification" in window && Notification.permission === "granted") {
+                    new Notification("Test Notification", { body: "This is a test notification from RPM", icon: "/favicon.ico" });
+                  } else {
+                    alert("Please enable push notifications first!");
+                  }
+                }}
+                title="Test browser notification"
+              >
+                Test
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs"
                 onClick={handleToggleSubscription}
                 title={isSubscribed ? "Disable push notifications" : "Enable push notifications"}
               >
