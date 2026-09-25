@@ -232,7 +232,15 @@ export function NotificationDropdown() {
                 className="h-7 px-2 text-xs"
                 onClick={() => {
                   if ("Notification" in window && Notification.permission === "granted") {
-                    new Notification("Test Notification", { body: "This is a test notification from RPM", icon: "/favicon.ico" });
+                    navigator.serviceWorker.ready.then(registration => {
+                      registration.showNotification("Test Notification", {
+                        body: "This is a test notification from RPM via Service Worker",
+                        icon: "/favicon.ico"
+                      });
+                    }).catch(err => {
+                      console.error("SW notification failed, falling back to basic", err);
+                      new Notification("Test Notification", { body: "This is a test notification from RPM", icon: "/favicon.ico" });
+                    });
                   } else {
                     alert("Please enable push notifications first!");
                   }

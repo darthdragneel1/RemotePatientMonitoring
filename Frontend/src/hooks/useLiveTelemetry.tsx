@@ -113,12 +113,12 @@ export function useLiveTelemetry() {
           );
           
           if ("Notification" in window && Notification.permission === "granted") {
-            const n = new Notification(title, { body: bodyText, icon: "/favicon.ico" });
-            n.onclick = () => {
-              window.focus();
-              handleNavigate();
-              n.close();
-            };
+            navigator.serviceWorker.ready.then(registration => {
+              registration.showNotification(title, { body: bodyText, icon: "/favicon.ico" });
+            }).catch(() => {
+              const n = new Notification(title, { body: bodyText, icon: "/favicon.ico" });
+              n.onclick = () => { window.focus(); handleNavigate(); n.close(); };
+            });
           }
         } else {
           // It's a normal reading or unassigned device.
@@ -142,12 +142,12 @@ export function useLiveTelemetry() {
           );
           
           if ("Notification" in window && Notification.permission === "granted") {
-            const n = new Notification(title, { body: bodyText, icon: "/favicon.ico", silent: true });
-            n.onclick = () => {
-              window.focus();
-              handleNavigate();
-              n.close();
-            };
+            navigator.serviceWorker.ready.then(registration => {
+              registration.showNotification(title, { body: bodyText, icon: "/favicon.ico", silent: true });
+            }).catch(() => {
+              const n = new Notification(title, { body: bodyText, icon: "/favicon.ico", silent: true });
+              n.onclick = () => { window.focus(); handleNavigate(); n.close(); };
+            });
           }
         }
 
