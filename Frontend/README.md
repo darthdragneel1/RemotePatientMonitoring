@@ -16,12 +16,14 @@ Dashboard for the multi-tenant device telemetry app. Organizations log in and se
 
 ```
 src/
-  main.tsx              # entrypoint: QueryClientProvider, BrowserRouter, AuthProvider, Toaster
+  main.tsx              # entrypoint: QueryClientProvider, BrowserRouter, AuthProvider, Toaster, ThemeProvider
   App.tsx                # route definitions
   context/
     AuthContext.tsx        # current user state, login/logout, backed by GET /auth/me
   components/
-    AppLayout.tsx           # nav bar (role-aware links) + page outlet + notification bell
+    AppLayout.tsx           # nav bar (role-aware links) + page outlet + notification bell + theme toggle
+    ThemeProvider.tsx       # dark/light mode context provider
+    ThemeToggle.tsx         # theme switcher button
     NotificationDropdown.tsx # header notification dropdown with badge count & clear all
     SwipeableAlertItem.tsx   # swipe/drag-to-dismiss notification card with direct navigation
     ProtectedRoute.tsx        # redirects to /login if unauthenticated; RequireRole for admin-only routes

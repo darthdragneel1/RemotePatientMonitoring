@@ -6,6 +6,7 @@ import { Menu, X } from "lucide-react";
 
 import { useLiveTelemetry } from "@/hooks/useLiveTelemetry";
 import { NotificationDropdown } from "@/components/NotificationDropdown";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `text-sm font-medium transition-colors ${isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"}`;
@@ -67,6 +68,7 @@ export function AppLayout() {
 
           {/* Desktop Right Side */}
           <div className="hidden md:flex items-center gap-4">
+            <ThemeToggle />
             <NotificationDropdown />
             <span className="text-sm text-muted-foreground">{user?.email}</span>
             <Button variant="outline" size="sm" onClick={handleLogout}>
@@ -76,6 +78,7 @@ export function AppLayout() {
 
           {/* Mobile Right Controls */}
           <div className="flex md:hidden items-center gap-2">
+            <ThemeToggle />
             <NotificationDropdown />
             <button
               className="p-2 text-foreground"

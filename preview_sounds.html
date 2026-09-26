@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification Sounds Preview</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background-color: #f9fafb; margin: 0; }
+        .container { display: flex; gap: 20px; }
+        button { padding: 15px 30px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; transition: opacity 0.2s; }
+        button:hover { opacity: 0.9; }
+        .btn-green { background-color: #22c55e; }
+        .btn-orange { background-color: #f97316; }
+        .btn-red { background-color: #ef4444; }
+    </style>
+</head>
+<body>
+    <h2>Click to preview notification sounds</h2>
+    <div class="container">
+        <button class="btn-green" onclick="playGreen()">Play Green (Swosh)</button>
+        <button class="btn-orange" onclick="playOrange()">Play Orange (Beeps)</button>
+        <button class="btn-red" onclick="playRed()">Play Red (Buzzer)</button>
+    </div>
+
+    <script>
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let ctx;
+
+        function getContext() {
+            if (!ctx) ctx = new AudioContext();
+            if (ctx.state === 'suspended') ctx.resume();
+            return ctx;
+        }
+
+        function playGreen() {
+            const ctx = getContext();
+            const playTap = (startTime) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(400, startTime);
+                
+                // Extremely soft and quick
+                gain.gain.setValueAtTime(0, startTime);
+                gain.gain.linearRampToValueAtTime(0.06, startTime + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.1);
+                
+                osc.start(startTime);
+                osc.stop(startTime + 0.15);
+            };
+            
+            playTap(ctx.currentTime);
+        }
+
+        function playOrange() {
+            const ctx = getContext();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(880, ctx.currentTime);
+            osc.frequency.setValueAtTime(1046.50, ctx.currentTime + 0.15);
+            
+            gain.gain.setValueAtTime(0.5, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+            
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.5);
+        }
+
+        function playRed() {
+            const ctx = getContext();
+            const playPulse = (startTime) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.type = "triangle"; // more harmonics than sine
+                osc.frequency.setValueAtTime(900, startTime);
+                osc.frequency.setValueAtTime(1200, startTime + 0.08); // upward inflection
+                
+                gain.gain.setValueAtTime(0, startTime);
+                gain.gain.linearRampToValueAtTime(0.8, startTime + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.2);
+                
+                osc.start(startTime);
+                osc.stop(startTime + 0.25);
+            };
+            playPulse(ctx.currentTime);
+            playPulse(ctx.currentTime + 0.15);
+            playPulse(ctx.currentTime + 0.30);
+        }
+    </script>
+</body>
+</html>
