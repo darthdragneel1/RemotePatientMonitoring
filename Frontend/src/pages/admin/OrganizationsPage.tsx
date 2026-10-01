@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useOrganizations, useCreateOrganization, useDeleteOrganization } from "@/hooks/useAdmin";
 import { ApiError } from "@/lib/api";
@@ -55,6 +56,7 @@ function DeleteOrganizationDialog({ orgId, orgName }: { orgId: string; orgName: 
 export function OrganizationsPage() {
   const { data: organizations, isLoading } = useOrganizations();
   const createOrganization = useCreateOrganization();
+  const navigate = useNavigate();
 
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -120,10 +122,14 @@ export function OrganizationsPage() {
               </TableHeader>
               <TableBody>
                 {organizations?.map((org) => (
-                  <TableRow key={org.id}>
-                    <TableCell className="font-medium whitespace-nowrap">{org.name}</TableCell>
+                  <TableRow 
+                    key={org.id} 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => navigate(`/admin/organizations/${org.id}`)}
+                  >
+                    <TableCell className="font-medium whitespace-nowrap text-primary">{org.name}</TableCell>
                     <TableCell className="whitespace-nowrap">{new Date(org.createdAt).toLocaleDateString()}</TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <DeleteOrganizationDialog orgId={org.id} orgName={org.name} />
                     </TableCell>
                   </TableRow>

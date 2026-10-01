@@ -1,17 +1,31 @@
 import { useState } from "react";
-import { useAuditLogs } from "@/hooks/useAuditLogs";
+import { useAuditLogs, downloadAuditLogsTsv } from "@/hooks/useAuditLogs";
+import { useOrganizations } from "@/hooks/useAdmin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Navigate } from "react-router-dom";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function AuditLogsPage() {
   const { user } = useAuth();
   const [page, setPage] = useState(1);
-  const { data, isLoading } = useAuditLogs(page, 20);
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [orgId, setOrgId] = useState("all");
+
+  const filters = {
+    ...(from ? { from: new Date(from).toISOString() } : {}),
+    ...(to ? { to: new Date(new Date(to).setHours(23, 59, 59, 999)).toISOString() } : {}),
+    ...(orgId && orgId !== "all" ? { orgId } : {}),
+  };
+
+  const { data, isLoading } = useAuditLogs(page, 20, filters);
+  const { data: orgs } = useOrganizations();
 
   if (user?.role === "ORG_USER") {
     return <Navigate to="/" replace />;
@@ -19,10 +33,43 @@ export function AuditLogsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">Audit Logs</h1>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h1 className="text-3xl font-bold tracking-tight">Audit Logs</h1>
+        <Button variant="outline" onClick={() => downloadAuditLogsTsv(filters)}>
+          <Download className="mr-2 h-4 w-4" />
+          Download TSV
+        </Button>
+      </div>
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <CardTitle>System Activity</CardTitle>
+          <div className="flex flex-wrap gap-2">
+            {user?.role === "SUPER_ADMIN" && (
+              <Select value={orgId} onValueChange={setOrgId}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="All Organizations" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Organizations</SelectItem>
+                  {orgs?.map(org => (
+                    <SelectItem key={org.id} value={org.id}>{org.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <Input 
+              type="date" 
+              value={from} 
+              onChange={(e) => { setFrom(e.target.value); setPage(1); }} 
+              className="w-[150px]"
+            />
+            <Input 
+              type="date" 
+              value={to} 
+              onChange={(e) => { setTo(e.target.value); setPage(1); }} 
+              className="w-[150px]"
+            />
+          </div>
         </CardHeader>
         <CardContent>
           <div className="rounded-md border border-border overflow-x-auto">
@@ -62,7 +109,7 @@ export function AuditLogsPage() {
                       <TableCell className="whitespace-nowrap">
                         {log.target} {log.targetId ? <span className="text-xs text-muted-foreground ml-1">({log.targetId.slice(-6)})</span> : null}
                       </TableCell>
-                      <TableCell className="max-w-xs truncate text-xs font-mono text-muted-foreground">
+                      <TableCell className="text-xs font-mono text-muted-foreground whitespace-nowrap">
                         {log.details ? JSON.stringify(log.details) : "-"}
                       </TableCell>
                     </TableRow>

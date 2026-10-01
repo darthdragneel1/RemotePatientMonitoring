@@ -14,6 +14,27 @@ export async function listOrganizations(_req: Request, res: Response) {
   res.json({ organizations });
 }
 
+export async function getOrganization(req: Request, res: Response) {
+  const orgId = param(req, "id");
+  const organization = await prisma.organization.findUnique({
+    where: { id: orgId },
+    include: {
+      patients: { orderBy: { firstName: "asc" } },
+      devices: {
+        where: { patientId: null },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      }
+    }
+  });
+
+  if (!organization) {
+    return res.status(404).json({ error: "Organization not found" });
+  }
+
+  res.json({ organization });
+}
+
 export async function createOrganization(req: Request, res: Response) {
   const organization = await prisma.organization.create({
     data: req.body,
