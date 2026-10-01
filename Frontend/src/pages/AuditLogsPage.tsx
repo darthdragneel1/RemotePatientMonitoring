@@ -45,7 +45,7 @@ export function AuditLogsPage() {
           <CardTitle>System Activity</CardTitle>
           <div className="flex flex-wrap gap-2">
             {user?.role === "SUPER_ADMIN" && (
-              <Select value={orgId} onValueChange={setOrgId}>
+              <Select value={orgId} onValueChange={(val) => setOrgId(val || "all")}>
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="All Organizations" />
                 </SelectTrigger>
