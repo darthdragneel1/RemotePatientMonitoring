@@ -39,9 +39,15 @@ export async function downloadAuditLogsTsv(filters: AuditLogFilters = {}) {
   if (filters.orgId) queryParams.set("orgId", filters.orgId);
 
   const url = `/audit/export?${queryParams.toString()}`;
-  // We need to fetch and trigger download
-  const response = await api.get<string>(url, { responseType: 'text' });
-  const blob = new Blob([response], { type: 'text/tab-separated-values' });
+  const API_URL = import.meta.env.VITE_API_URL || "";
+  const response = await fetch(`${API_URL}/api${url}`, { credentials: "include" });
+  
+  if (!response.ok) {
+    throw new Error("Failed to download audit logs");
+  }
+  
+  const text = await response.text();
+  const blob = new Blob([text], { type: 'text/tab-separated-values' });
   const downloadUrl = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = downloadUrl;
