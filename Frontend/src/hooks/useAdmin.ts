@@ -18,6 +18,14 @@ export function useOrganizations() {
   });
 }
 
+export function useOrganization(id: string | undefined) {
+  return useQuery({
+    queryKey: ["organizations", id],
+    queryFn: () => api.get<{ organization: Organization & { patients: any[], devices: any[] } }>(`/admin/organizations/${id}`).then((r) => r.organization),
+    enabled: !!id,
+  });
+}
+
 export function useCreateOrganization() {
   const queryClient = useQueryClient();
   return useMutation({

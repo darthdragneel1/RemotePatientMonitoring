@@ -10,10 +10,44 @@ export interface AuditLogPage {
   totalPages: number;
 }
 
-export function useAuditLogs(page = 1, limit = 50) {
+export interface AuditLogFilters {
+  from?: string;
+  to?: string;
+  orgId?: string;
+}
+
+export function useAuditLogs(page = 1, limit = 50, filters: AuditLogFilters = {}) {
+  const queryParams = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+  });
+  if (filters.from) queryParams.set("from", filters.from);
+  if (filters.to) queryParams.set("to", filters.to);
+  if (filters.orgId) queryParams.set("orgId", filters.orgId);
+
   return useQuery({
-    queryKey: ["auditLogs", page, limit],
-    queryFn: () => api.get<AuditLogPage>(`/audit?page=${page}&limit=${limit}`),
+    queryKey: ["auditLogs", page, limit, filters],
+    queryFn: () => api.get<AuditLogPage>(`/audit?${queryParams.toString()}`),
     placeholderData: (previousData) => previousData,
   });
+}
+
+export async function downloadAuditLogsTsv(filters: AuditLogFilters = {}) {
+  const queryParams = new URLSearchParams();
+  if (filters.from) queryParams.set("from", filters.from);
+  if (filters.to) queryParams.set("to", filters.to);
+  if (filters.orgId) queryParams.set("orgId", filters.orgId);
+
+  const url = `/audit/export?${queryParams.toString()}`;
+  // We need to fetch and trigger download
+  const response = await api.get<string>(url, { responseType: 'text' });
+  const blob = new Blob([response], { type: 'text/tab-separated-values' });
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = downloadUrl;
+  a.download = "audit-logs.tsv";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(downloadUrl);
 }
