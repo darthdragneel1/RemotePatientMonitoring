@@ -5,12 +5,12 @@ import type { Patient, Device, VitalThresholds } from "@/lib/types";
 export interface PatientInput {
   firstName: string;
   lastName: string;
-  dateOfBirth?: string;
-  gender?: string;
-  mrn?: string;
-  phone?: string;
-  notes?: string;
-  vitalThresholds?: VitalThresholds;
+  dateOfBirth?: string | null;
+  gender?: string | null;
+  mrn?: string | null;
+  phone?: string | null;
+  notes?: string | null;
+  vitalThresholds?: VitalThresholds | null;
   orgId?: string;
 }
 

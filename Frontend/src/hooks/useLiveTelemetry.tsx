@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { getTelemetryColumns, getTelemetryData, getVitalStatus, getThresholdFor, getVitalAbnormalityDirection } from "@/lib/telemetryDisplay";
+import { formatDob } from "@/lib/dateUtils";
 
 function recordLiveNotification(item: {
   title: string;
@@ -83,7 +84,7 @@ export function useLiveTelemetry() {
         }
         
         const deviceName = device.patient ? `${device.patient.firstName} ${device.patient.lastName}` : `Device ${device.deviceId}`;
-        const dobStr = device.patient?.dateOfBirth ? new Date(device.patient.dateOfBirth).toLocaleDateString() : "N/A";
+        const dobStr = device.patient?.dateOfBirth ? formatDob(device.patient.dateOfBirth) : "N/A";
         
         if (isAbnormal) {
           const title = `Abnormal reading for ${deviceName}`;
