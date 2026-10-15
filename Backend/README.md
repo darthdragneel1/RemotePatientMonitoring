@@ -56,9 +56,9 @@ prisma/
 
 - **Organization** — a tenant (clinic/hospital group).
 - **User** — `email`, `passwordHash`, `role` (`ORG_USER` | `ORG_ADMIN` | `SUPER_ADMIN`), optional `orgId` (null for super admins).
-- **Patient** — belongs to an `Organization`; holds name, date of birth, gender, MRN, phone, notes.
+- **Patient** — belongs to an `Organization`; holds name, date of birth, gender, MRN, phone, notes, `vitalThresholds`, and linked `events` (`TelemetryEvent[]`).
 - **Device** — belongs to an `Organization`, optionally linked to a `Patient`; holds MioConnect's `deviceId`, model number, IMEI, serial number.
-- **TelemetryEvent** — belongs to a `Device` (cascade-deleted with it); `kind` (`TELEMETRY` | `STATUS` | `HEARTBEAT`), raw JSON `payload`, `recordedAt` (indexed with `deviceId` for query performance).
+- **TelemetryEvent** — rooted to a `Patient` when assigned (cascade-deleted with patient), and references the originating `Device` via `deviceId` (`SetNull` on device removal so patient RPM records are preserved losslessly even if physical hardware is retired or replaced). If a device is unassigned, telemetry is stored under `deviceId` with `patientId: null`. Fields: `kind` (`TELEMETRY` | `STATUS` | `HEARTBEAT`), raw JSON `payload`, `recordedAt`, `communication`, `communicationAt`. Indexes on `[patientId, recordedAt]` and `[deviceId, recordedAt]` for fast queries.
 - **Invite** — belongs to an `Organization`; `email`, `role`, a hashed token (`tokenHash`), `expiresAt`, `acceptedAt`. Deleting a `Patient` sets `Device.patientId` to null rather than blocking or cascading.
 
 Multi-tenancy is enforced at the query layer: non-admin requests are always scoped by `orgId`; `SUPER_ADMIN` bypasses that filter.
@@ -79,7 +79,7 @@ Middleware in `src/middleware/auth.ts`:
 - **`POST /ingest/telemetry`**, **`/ingest/status`**, **`/ingest/heartbeat`** — receive data forwarded by MioConnect per the [Fully Managed Devices integration guide](https://lifesense.feishu.cn/docx/G9dbdospvouqkFxKUiRcVZIPntb). Each is also registered with an optional `/:deviceId` suffix to support MioConnect's `useDeviceIdInForwardingUrl` dashboard setting.
 - Authenticated by a **static header** (`requireIngestApiKey` middleware), not user JWT auth — the header name/value are configured via `INGEST_API_KEY_NAME` / `INGEST_API_KEY_VALUE` in `.env`, and the same pair must be entered in the MioConnect dashboard under **Data Forwarding → Authentication**. These are values you generate yourself (not issued by MioConnect); regenerate before going live if the current dev value has ever left `.env`.
 - An unrecognized `deviceId` gets `403 Forbidden` (MioConnect retries on non-2xx) rather than being silently dropped or auto-provisioned as an org-less device — devices must be pre-registered with an org in our DB first.
-- Each event is stored in `TelemetryEvent` with `kind` set accordingly, the **full raw payload** preserved as JSON, and `recordedAt` resolved from MioConnect's `createdAt` (unix seconds).
+- Each event is stored in `TelemetryEvent` with `kind` set accordingly, the **full raw payload** preserved as JSON, and `recordedAt` resolved from MioConnect's `createdAt` (unix seconds). If the device is currently assigned to a patient, `patientId` is automatically linked to root the reading to the patient.
 
 ## Dashboard API
 
@@ -90,13 +90,19 @@ All routes below require `requireAuth` and are org-scoped via `orgScope` (a `SUP
 - `POST /patients` — org users' patients are auto-assigned to their own org; `SUPER_ADMIN` must pass `orgId` in the body. Supports `dateOfBirth` (YYYY-MM-DD or ISO datetime, stored as UTC midnight to eliminate timezone drift), `gender`, `mrn`, `phone`, `notes`, and `vitalThresholds`.
 - `PATCH /patients/:id` — editing patient demographic information (`firstName`, `lastName`, `dateOfBirth`, `gender`, `phone`, `mrn`, `notes`) is restricted to admin users (`ORG_ADMIN` and `SUPER_ADMIN`). Clinicians/`ORG_USER`s may update `vitalThresholds`.
 - `DELETE /patients/:id` — restricted to admin users (`ORG_ADMIN` and `SUPER_ADMIN`). Linked devices will have `patientId` unassigned.
+- `GET /patients/:id/telemetry?kind=&from=&to=&page=&limit=` — patient-rooted event history across all past and current assigned devices, paginated.
+- `GET /patients/:id/telemetry/latest` — latest telemetry event per kind for the patient.
+- `GET /patients/:id/telemetry/export?kind=&from=&to=` — bulk export of all patient telemetry in range for PDF/reporting.
+- `PATCH /patients/:id/telemetry/:eventId/communication` — update or delete clinician communication note on a telemetry event.
 
 **Devices**
 - `GET /devices`, `GET /devices/:id` — includes linked `patient` (name) and `org` (name)
 - `POST /devices` — same org-assignment rule as patients; if `patientId` is given, it's validated to belong to the same org
 - `PATCH /devices/:id`, `DELETE /devices/:id`
-- `GET /devices/:id/telemetry?kind=&from=&to=&limit=` — event history, newest first, `limit` capped at 200
+- `GET /devices/:id/telemetry?kind=&from=&to=&page=&limit=` — when assigned to a patient, displays that patient's telemetry history; when unassigned, displays unassigned hardware test logs.
 - `GET /devices/:id/telemetry/latest` — most recent event per kind (`TELEMETRY`/`STATUS`/`HEARTBEAT`)
+- `GET /devices/:id/telemetry/export?kind=&from=&to=` — bulk export of telemetry for PDF generation.
+- `PATCH /devices/:id/telemetry/:eventId/communication` — update or delete clinician communication note on a telemetry event.
 
 **Organizations & Invites** (`SUPER_ADMIN` only, under `/admin`)
 - `GET/POST /admin/organizations`

@@ -68,7 +68,10 @@ export async function getAlerts(req: Request, res: Response) {
     // 1. Fetch recent TelemetryEvents and identify all abnormal readings
     const eventWhere: any = { kind: "TELEMETRY" };
     if (orgId) {
-      eventWhere.device = { orgId };
+      eventWhere.OR = [
+        { device: { orgId } },
+        { patient: { orgId } },
+      ];
     }
 
     const recentEvents = await prisma.telemetryEvent.findMany({
@@ -76,32 +79,35 @@ export async function getAlerts(req: Request, res: Response) {
       orderBy: { recordedAt: "desc" },
       take: limit * 2,
       include: {
-        device: {
-          include: { patient: true },
-        },
+        device: true,
+        patient: true,
       },
     });
 
     const telemetryAlerts: any[] = [];
     for (const ev of recentEvents) {
-      if (!ev.device) continue;
+      const patient = ev.patient;
+      const device = ev.device;
+      if (!device && !patient) continue;
+
       const abnormalities = getTelemetryAbnormalities(
         ev.payload,
-        ev.device.patient?.vitalThresholds
+        patient?.vitalThresholds
       );
       if (abnormalities.length > 0) {
-        const patientName = ev.device.patient
-          ? `${ev.device.patient.firstName} ${ev.device.patient.lastName}`
-          : `Device ${ev.device.deviceId}`;
+        const patientName = patient
+          ? `${patient.firstName} ${patient.lastName}`
+          : `Device ${device?.deviceId}`;
+        const targetUrl = device ? `/devices/${device.id}` : `/patients/${patient?.id}`;
 
         telemetryAlerts.push({
           id: `te-${ev.id}`,
-          targetId: ev.device.id,
+          targetId: device?.id ?? patient?.id ?? "",
           createdAt: ev.recordedAt.toISOString(),
           details: {
             title: `Abnormal reading for ${patientName}`,
             body: abnormalities.join("\n"),
-            url: `/devices/${ev.device.id}`,
+            url: targetUrl,
             level: "error",
           },
         });

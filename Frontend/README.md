@@ -31,8 +31,8 @@ src/
   hooks/
     useWebPush.ts              # Web Push subscription management (subscribe/unsubscribe/status)
     useLiveTelemetry.tsx       # SSE live telemetry stream + abnormal vital alerts
-    usePatients.ts             # list/get/create/update/delete
-    useDevices.ts               # list/get/create/update/delete + telemetry history/latest
+    usePatients.ts             # list/get/create/update/delete + patient telemetry history/latest/export/communication
+    useDevices.ts               # list/get/create/update/delete + device telemetry history/latest/export/communication
     useAdmin.ts                   # organizations + invites (admin-only)
     useAcceptInvite.ts              # public invite preview + accept
   pages/
@@ -41,13 +41,15 @@ src/
     DevicesPage.tsx               # device list + add-device dialog
     DeviceDetailPage.tsx            # device info, patient reassignment, telemetry history
     PatientsPage.tsx                  # patient list + add-patient dialog
-    PatientDetailPage.tsx               # patient info (editable by admins), linked devices
+    PatientDetailPage.tsx               # patient info (editable by admins), alert threshold sliders, linked devices, and patient-rooted telemetry history with PDF export & communication logs
     admin/
       OrganizationsPage.tsx               # org list + create dialog
       InvitesPage.tsx                       # invite list + create/revoke
   lib/
     api.ts                    # fetch wrapper — sends cookies, typed ApiError on non-2xx
     dateUtils.ts              # timezone-safe DOB formatters (formatDob, toDateInputValue, toDobIsoString)
+    telemetryPdf.ts           # PDF report generator for patient or device telemetry
+    telemetryDisplay.ts       # threshold evaluation, column specs, and vital styling
     types.ts                   # types mirroring the backend's API shapes
     utils.ts                    # shadcn's cn() helper
 ```
@@ -61,7 +63,7 @@ src/
   /devices                   — device list (org-scoped server-side), add-device dialog
   /devices/:id                 — device detail: info, patient reassignment, interactive display threshold sliders (unified across patient record, live alerting, and table styling), telemetry history
   /patients                     — patient list (Name, DOB, Gender, MRN, Phone), add-patient dialog (includes Gender)
-  /patients/:id                   — patient detail: editable info for admins (Name, DOB, Gender, Phone, MRN), alert threshold sliders, linked devices
+  /patients/:id                   — patient detail: editable info for admins (Name, DOB, Gender, Phone, MRN), alert threshold sliders, linked devices, and complete patient-rooted telemetry history (cumulative across all assigned machines) with date filters, pagination, PDF export, and clinician communication logging
   /admin/organizations               — SUPER_ADMIN only: org list + create
   /admin/invites                       — SUPER_ADMIN only: invite list + create/revoke
 ```

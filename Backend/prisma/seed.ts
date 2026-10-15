@@ -12,7 +12,14 @@ async function main() {
   for (const name of orgsToDelete) {
     const org = await prisma.organization.findFirst({ where: { name } });
     if (org) {
-      await prisma.telemetryEvent.deleteMany({ where: { device: { orgId: org.id } } });
+      await prisma.telemetryEvent.deleteMany({
+        where: {
+          OR: [
+            { device: { orgId: org.id } },
+            { patient: { orgId: org.id } },
+          ],
+        },
+      });
       await prisma.device.deleteMany({ where: { orgId: org.id } });
       await prisma.patient.deleteMany({ where: { orgId: org.id } });
       await prisma.invite.deleteMany({ where: { orgId: org.id } });
