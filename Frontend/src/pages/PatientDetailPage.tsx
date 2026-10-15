@@ -1,20 +1,31 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 import { usePatient, useUpdatePatient, useDeletePatient } from "@/hooks/usePatients";
 import { ApiError } from "@/lib/api";
+import { formatDob, toDateInputValue, toDobIsoString } from "@/lib/dateUtils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { AssignDeviceDialog } from "@/components/AssignDeviceDialog";
 import type { VitalThresholds, VitalMetricKey, VitalThreshold } from "@/lib/types";
 
 export function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "ORG_ADMIN" || user?.role === "SUPER_ADMIN";
   const { data: patient, isLoading } = usePatient(id);
   const updatePatient = useUpdatePatient(id!);
   const deletePatient = useDeletePatient();
@@ -22,7 +33,10 @@ export function PatientDetailPage() {
   const [editing, setEditing] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [gender, setGender] = useState("");
   const [phone, setPhone] = useState("");
+  const [mrn, setMrn] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const [sysLimits, setSysLimits] = useState<number[]>([80, 90, 130, 140]);
@@ -75,7 +89,11 @@ export function PatientDetailPage() {
     if (!patient) return;
     setFirstName(patient.firstName);
     setLastName(patient.lastName);
+    setDateOfBirth(toDateInputValue(patient.dateOfBirth));
+    setGender(patient.gender ?? "");
     setPhone(patient.phone ?? "");
+    setMrn(patient.mrn ?? "");
+    setError(null);
     setEditing(true);
   }
 
@@ -86,7 +104,10 @@ export function PatientDetailPage() {
       await updatePatient.mutateAsync({
         firstName,
         lastName,
-        phone: phone || undefined,
+        dateOfBirth: toDobIsoString(dateOfBirth),
+        gender: gender || null,
+        phone: phone || null,
+        mrn: mrn || null,
       });
       toast.success("Patient updated");
       setEditing(false);
@@ -174,16 +195,18 @@ export function PatientDetailPage() {
             {patient.firstName} {patient.lastName}
           </h1>
         </div>
-        <Button variant="destructive" onClick={handleDelete} disabled={deletePatient.isPending}>
-          Delete Patient
-        </Button>
+        {isAdmin && (
+          <Button variant="destructive" onClick={handleDelete} disabled={deletePatient.isPending}>
+            Delete Patient
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Patient Info</CardTitle>
-            {!editing && (
+            {isAdmin && !editing && (
               <Button variant="outline" size="sm" onClick={startEditing}>
                 Edit
               </Button>
@@ -194,18 +217,62 @@ export function PatientDetailPage() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name</Label>
+                    <Label htmlFor="firstName">
+                      First Name <span className="text-destructive">*</span>
+                    </Label>
                     <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name</Label>
+                    <Label htmlFor="lastName">
+                      Last Name <span className="text-destructive">*</span>
+                    </Label>
                     <Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                    <Input
+                      id="dateOfBirth"
+                      type="date"
+                      value={dateOfBirth}
+                      onChange={(e) => setDateOfBirth(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="gender">Gender</Label>
+                    <Select value={gender || "NONE"} onValueChange={(v) => setGender(!v || v === "NONE" ? "" : v)}>
+                      <SelectTrigger id="gender" className="w-full">
+                        <SelectValue>
+                          {(value: string | null) => {
+                            if (!value || value === "NONE") return "Select Gender";
+                            return value;
+                          }}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NONE">Select Gender</SelectItem>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                        <SelectItem value="Unspecified">Unspecified</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="mrn">MRN</Label>
+                    <Input id="mrn" value={mrn} onChange={(e) => setMrn(e.target.value)} />
+                  </div>
+                </div>
+
                 {error && <p className="text-sm text-destructive">{error}</p>}
                 <div className="flex gap-2">
                   <Button type="submit" disabled={updatePatient.isPending}>
@@ -221,7 +288,7 @@ export function PatientDetailPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Date of Birth</span>
-                    <span>{patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : "—"}</span>
+                    <span>{formatDob(patient.dateOfBirth)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Gender</span>

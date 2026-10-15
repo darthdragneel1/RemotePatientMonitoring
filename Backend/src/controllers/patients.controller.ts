@@ -63,6 +63,16 @@ export async function updatePatient(req: Request, res: Response) {
     return res.status(404).json({ error: "Patient not found" });
   }
 
+  // Admin users (ORG_ADMIN, SUPER_ADMIN) can edit patient demographics.
+  // Standard ORG_USERs can only adjust vitalThresholds.
+  if (req.user?.role === "ORG_USER") {
+    const demographicKeys = ["firstName", "lastName", "dateOfBirth", "gender", "phone", "mrn", "notes"];
+    const hasDemographicChanges = Object.keys(req.body).some((key) => demographicKeys.includes(key));
+    if (hasDemographicChanges) {
+      return res.status(403).json({ error: "Only admin users can edit patient information" });
+    }
+  }
+
   const patient = await prisma.patient.update({
     where: { id: existing.id },
     data: req.body,
@@ -80,6 +90,10 @@ export async function updatePatient(req: Request, res: Response) {
 }
 
 export async function deletePatient(req: Request, res: Response) {
+  if (req.user?.role === "ORG_USER") {
+    return res.status(403).json({ error: "Only admin users can delete patients" });
+  }
+
   const existing = await prisma.patient.findFirst({
     where: { id: param(req, "id"), ...orgScope(req) },
     include: { devices: true },

@@ -1,5 +1,6 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { formatDob } from "./dateUtils";
 import { getTelemetryColumns, getTelemetryData, getThresholdFor, getVitalStatus, type VitalStatus } from "./telemetryDisplay";
 import type { TelemetryEvent, VitalThresholds } from "./types";
 
@@ -40,9 +41,8 @@ export function downloadTelemetryPdf({
 
   doc.setFontSize(10);
   doc.setTextColor(100);
-  
   if (patientName) {
-    const dobFormatted = patientDob ? new Date(patientDob).toLocaleDateString("en-US", { month: '2-digit', day: '2-digit', year: 'numeric' }) : "N/A";
+    const dobFormatted = patientDob ? formatDob(patientDob) : "N/A";
     doc.text(`Patient: ${patientName}`, 14, 23);
     doc.text(`DOB: ${dobFormatted} | Phone: ${patientPhone || "N/A"}`, 14, 28);
   }

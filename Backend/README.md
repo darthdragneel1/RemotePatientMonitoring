@@ -87,8 +87,9 @@ All routes below require `requireAuth` and are org-scoped via `orgScope` (a `SUP
 
 **Patients**
 - `GET /patients`, `GET /patients/:id`
-- `POST /patients` — org users' patients are auto-assigned to their own org; `SUPER_ADMIN` must pass `orgId` in the body
-- `PATCH /patients/:id`, `DELETE /patients/:id`
+- `POST /patients` — org users' patients are auto-assigned to their own org; `SUPER_ADMIN` must pass `orgId` in the body. Supports `dateOfBirth` (YYYY-MM-DD or ISO datetime, stored as UTC midnight to eliminate timezone drift), `gender`, `mrn`, `phone`, `notes`, and `vitalThresholds`.
+- `PATCH /patients/:id` — editing patient demographic information (`firstName`, `lastName`, `dateOfBirth`, `gender`, `phone`, `mrn`, `notes`) is restricted to admin users (`ORG_ADMIN` and `SUPER_ADMIN`). Clinicians/`ORG_USER`s may update `vitalThresholds`.
+- `DELETE /patients/:id` — restricted to admin users (`ORG_ADMIN` and `SUPER_ADMIN`). Linked devices will have `patientId` unassigned.
 
 **Devices**
 - `GET /devices`, `GET /devices/:id` — includes linked `patient` (name) and `org` (name)
@@ -111,7 +112,7 @@ All routes below require `requireAuth` and are org-scoped via `orgScope` (a `SUP
 There's no self-signup. Two paths onto the platform:
 
 - **`SUPER_ADMIN`** — never created via the API. Only exists via the seed script or a one-off script run directly against the DB. There should be very few of these accounts.
-- **Org users** (`ORG_USER` / `ORG_ADMIN`) — a `SUPER_ADMIN` creates the organization (`POST /admin/organizations`), then invites a user into it (`POST /admin/invites`). The invitee gets an emailed link, sets their own password via `POST /invites/:token/accept`, and is logged in immediately. `ORG_ADMIN` currently has no elevated permissions beyond `ORG_USER` (both are simply org-scoped) — self-service user management by org admins is a possible later addition, deliberately deferred for now.
+- **Org users** (`ORG_USER` / `ORG_ADMIN`) — a `SUPER_ADMIN` creates the organization (`POST /admin/organizations`), then invites a user into it (`POST /admin/invites`). The invitee gets an emailed link, sets their own password via `POST /invites/:token/accept`, and is logged in immediately. `ORG_ADMIN` (along with `SUPER_ADMIN`) has elevated administrative permissions to edit patient demographic information and remove patients, whereas standard `ORG_USER` accounts can view patients and adjust monitoring vital thresholds.
 
 **Email is currently stubbed** — `src/utils/email.ts`'s `sendInviteEmail` just logs the invite link to the console instead of sending anything, since a Resend API key hasn't been added yet. To wire up real delivery:
 1. Sign up for [Resend](https://resend.com), get an API key.

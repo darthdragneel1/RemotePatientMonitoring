@@ -22,14 +22,24 @@ const vitalThresholdsSchema = z
   })
   .partial();
 
+// Preprocess dateOfBirth to support both ISO strings and YYYY-MM-DD date-only inputs,
+// converting to UTC midnight ISO string and allowing null to clear.
+const dobSchema = z.preprocess((val) => {
+  if (val === "" || val === null || val === undefined) return val === "" ? null : val;
+  if (typeof val === "string" && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
+    return `${val}T00:00:00.000Z`;
+  }
+  return val;
+}, z.string().datetime().nullable().optional());
+
 export const createPatientSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
-  dateOfBirth: z.iso.datetime().optional(),
-  gender: z.string().optional(),
-  mrn: z.string().optional(),
-  phone: z.string().optional(),
-  notes: z.string().optional(),
+  dateOfBirth: dobSchema,
+  gender: z.string().nullable().optional(),
+  mrn: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
   vitalThresholds: vitalThresholdsSchema.optional(),
   // Only honored for SUPER_ADMIN; ignored (overridden by req.user.orgId) for org users.
   orgId: z.string().optional(),
@@ -38,3 +48,4 @@ export const createPatientSchema = z.object({
 export const updatePatientSchema = createPatientSchema
   .partial()
   .omit({ orgId: true });
+

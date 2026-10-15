@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { usePatients, useCreatePatient, useDeletePatient } from "@/hooks/usePatients";
 import { useOrganizations } from "@/hooks/useAdmin";
 import { ApiError } from "@/lib/api";
+import { formatDob, toDobIsoString } from "@/lib/dateUtils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,6 +67,7 @@ function DeletePatientDialog({ patientId, patientName }: { patientId: string; pa
 
 export function PatientsPage() {
   const { user } = useAuth();
+  const isAdmin = user?.role === "ORG_ADMIN" || user?.role === "SUPER_ADMIN";
   const { data: patients, isLoading } = usePatients();
   const { data: organizations } = useOrganizations();
   const createPatient = useCreatePatient();
@@ -74,6 +76,7 @@ export function PatientsPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
+  const [gender, setGender] = useState("");
   const [mrn, setMrn] = useState("");
   const [phone, setPhone] = useState("");
   const [orgId, setOrgId] = useState("");
@@ -84,6 +87,7 @@ export function PatientsPage() {
     setFirstName("");
     setLastName("");
     setDateOfBirth("");
+    setGender("");
     setMrn("");
     setPhone("");
     setOrgId("");
@@ -107,7 +111,8 @@ export function PatientsPage() {
       await createPatient.mutateAsync({
         firstName,
         lastName,
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth).toISOString() : undefined,
+        dateOfBirth: toDobIsoString(dateOfBirth) ?? undefined,
+        gender: gender || undefined,
         mrn: mrn || undefined,
         phone: phone || undefined,
         vitalThresholds: Object.keys(vitalThresholds).length > 0 ? vitalThresholds : undefined,
@@ -151,22 +156,44 @@ export function PatientsPage() {
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
+                  <Label htmlFor="firstName">First Name <span className="text-destructive">*</span></Label>
                   <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
+                  <Label htmlFor="lastName">Last Name <span className="text-destructive">*</span></Label>
                   <Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                <Input
-                  id="dateOfBirth"
-                  type="date"
-                  value={dateOfBirth}
-                  onChange={(e) => setDateOfBirth(e.target.value)}
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                  <Input
+                    id="dateOfBirth"
+                    type="date"
+                    value={dateOfBirth}
+                    onChange={(e) => setDateOfBirth(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="gender">Gender</Label>
+                  <Select value={gender || "NONE"} onValueChange={(v) => setGender(!v || v === "NONE" ? "" : v)}>
+                    <SelectTrigger id="gender" className="w-full">
+                      <SelectValue>
+                        {(value: string | null) => {
+                          if (!value || value === "NONE") return "Select Gender";
+                          return value;
+                        }}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NONE">Select Gender</SelectItem>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                      <SelectItem value="Unspecified">Unspecified</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="mrn">MRN</Label>
@@ -204,9 +231,10 @@ export function PatientsPage() {
                 <TableRow>
                   <TableHead className="whitespace-nowrap">Name</TableHead>
                   <TableHead className="whitespace-nowrap">Date of Birth</TableHead>
+                  <TableHead className="whitespace-nowrap">Gender</TableHead>
                   <TableHead className="whitespace-nowrap">MRN</TableHead>
                   <TableHead className="whitespace-nowrap">Phone</TableHead>
-                  <TableHead className="w-[100px]"></TableHead>
+                  {isAdmin && <TableHead className="w-[100px]"></TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -218,13 +246,16 @@ export function PatientsPage() {
                       </Link>
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
-                      {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : "—"}
+                      {formatDob(patient.dateOfBirth)}
                     </TableCell>
+                    <TableCell className="whitespace-nowrap">{patient.gender ?? "—"}</TableCell>
                     <TableCell className="whitespace-nowrap">{patient.mrn ?? "—"}</TableCell>
                     <TableCell className="whitespace-nowrap">{patient.phone ?? "—"}</TableCell>
-                    <TableCell>
-                      <DeletePatientDialog patientId={patient.id} patientName={`${patient.firstName} ${patient.lastName}`} />
-                    </TableCell>
+                    {isAdmin && (
+                      <TableCell>
+                        <DeletePatientDialog patientId={patient.id} patientName={`${patient.firstName} ${patient.lastName}`} />
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
