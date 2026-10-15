@@ -45,6 +45,8 @@ export function useUpdateDevice(id: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["devices"] });
       queryClient.invalidateQueries({ queryKey: ["devices", id] });
+      queryClient.invalidateQueries({ queryKey: ["devices", id, "telemetry"] });
+      queryClient.invalidateQueries({ queryKey: ["patients"] });
     },
   });
 }
@@ -96,6 +98,7 @@ export function useUpdateTelemetryCommunication(deviceId: string) {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["devices", deviceId, "telemetry"] });
+      queryClient.invalidateQueries({ queryKey: ["patients"] });
     },
   });
 }

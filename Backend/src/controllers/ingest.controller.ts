@@ -71,6 +71,7 @@ function makeIngestHandler(kind: TelemetryKind) {
     const newEvent = await prisma.telemetryEvent.create({
       data: {
         deviceId: device.id,
+        patientId: device.patientId ?? null,
         kind,
         payload: req.body,
         recordedAt,

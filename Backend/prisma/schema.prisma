@@ -81,6 +81,7 @@ model Patient {
   org   Organization @relation(fields: [orgId], references: [id])
 
   devices Device[]
+  events  TelemetryEvent[]
 
   @@unique([orgId, mrn])
 }
@@ -112,9 +113,13 @@ model TelemetryEvent {
   communication   String?
   communicationAt DateTime?
 
-  deviceId String
-  device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  patientId String?
+  patient   Patient? @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
+  deviceId String?
+  device   Device?  @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+
+  @@index([patientId, recordedAt])
   @@index([deviceId, recordedAt])
 }
 

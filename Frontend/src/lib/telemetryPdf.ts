@@ -11,8 +11,8 @@ const STATUS_RGB: Record<VitalStatus, [number, number, number]> = {
 };
 
 interface DownloadTelemetryPdfOptions {
-  deviceLabel: string;
-  modelNumber: string | null;
+  deviceLabel?: string;
+  modelNumber?: string | null;
   events: TelemetryEvent[];
   from?: string;
   to?: string;
@@ -33,11 +33,16 @@ export function downloadTelemetryPdf({
   patientDob,
   patientPhone,
 }: DownloadTelemetryPdfOptions) {
-  const columns = getTelemetryColumns(modelNumber);
+  const firstPayload = events.length > 0 ? events[0].payload : undefined;
+  const columns = getTelemetryColumns(modelNumber ?? null, firstPayload);
   const doc = new jsPDF();
 
+  const title = patientName
+    ? `Telemetry Report — ${patientName}`
+    : `Telemetry Report — ${deviceLabel || "Device"}`;
+
   doc.setFontSize(14);
-  doc.text(`Telemetry Report — ${deviceLabel}`, 14, 16);
+  doc.text(title, 14, 16);
 
   doc.setFontSize(10);
   doc.setTextColor(100);
@@ -45,13 +50,15 @@ export function downloadTelemetryPdf({
     const dobFormatted = patientDob ? formatDob(patientDob) : "N/A";
     doc.text(`Patient: ${patientName}`, 14, 23);
     doc.text(`DOB: ${dobFormatted} | Phone: ${patientPhone || "N/A"}`, 14, 28);
+  } else if (deviceLabel) {
+    doc.text(`Device: ${deviceLabel}`, 14, 23);
   }
 
   const rangeLabel =
     from || to
       ? `${from ? new Date(from).toLocaleDateString() : "start"} – ${to ? new Date(to).toLocaleDateString() : "now"}`
       : "All time";
-  const startY = patientName ? 33 : 23;
+  const startY = patientName ? 33 : 28;
   
   doc.text(`Range: ${rangeLabel}`, 14, startY);
   doc.text(`Generated: ${new Date().toLocaleString()}`, 14, startY + 5);
@@ -88,5 +95,6 @@ export function downloadTelemetryPdf({
   });
 
   const dateStamp = new Date().toISOString().slice(0, 10);
-  doc.save(`telemetry-${deviceLabel}-${dateStamp}.pdf`);
+  const filePrefix = (patientName ? patientName.toLowerCase().replace(/[^a-z0-9]+/g, "-") : deviceLabel) || "export";
+  doc.save(`telemetry-${filePrefix}-${dateStamp}.pdf`);
 }

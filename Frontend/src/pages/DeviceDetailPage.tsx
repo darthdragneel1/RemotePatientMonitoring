@@ -408,7 +408,14 @@ export function DeviceDetailPage() {
 
       <div>
         <div className="flex flex-wrap items-end justify-between gap-4">
-          <h2 className="text-lg font-semibold">Telemetry History</h2>
+          <div>
+            <h2 className="text-lg font-semibold">Telemetry History</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {device.patient
+                ? `Readings associated with assigned patient: ${device.patient.firstName} ${device.patient.lastName}`
+                : "Unassigned device. Showing standalone hardware test telemetry."}
+            </p>
+          </div>
           <div className="flex flex-wrap items-end gap-3">
             <div className="space-y-1">
               <Label htmlFor="fromDate" className="text-xs text-muted-foreground">

@@ -68,7 +68,19 @@ export interface TelemetryEvent {
   createdAt: string;
   communication?: string | null;
   communicationAt?: string | null;
-  deviceId: string;
+  patientId?: string | null;
+  patient?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    vitalThresholds?: VitalThresholds | null;
+  } | null;
+  deviceId?: string | null;
+  device?: {
+    id: string;
+    deviceId: string;
+    modelNumber?: string | null;
+  } | null;
 }
 
 export interface AuditLog {
